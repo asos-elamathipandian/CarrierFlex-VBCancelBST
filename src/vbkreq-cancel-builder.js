@@ -56,6 +56,11 @@ function nowStr() {
   return `${n.getFullYear()}${pad(n.getMonth()+1)}${pad(n.getDate())} ${pad(n.getHours())}${pad(n.getMinutes())}${pad(n.getSeconds())}`;
 }
 
+// Strip hyphens from YYYY-MM-DD to YYYYMMDD for E2open date fields.
+function ymd(val) {
+  return String(val || '').replace(/-/g, '');
+}
+
 function nowFilenameStr() {
   return nowStr().replace(' ', '');
 }
@@ -76,14 +81,14 @@ function saveJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
-/** Get the control number (ASOSBOOK-NNNNNNNNN) and increment the counter. */
+/** Get the control number (ASOSCXL-NNNNNNNNN) and increment the counter. */
 function nextCtrlNumber() {
-  const data = loadJson(COUNTER_FILE, { counter: 200000001 });
-  if (!data.counter) data.counter = 200000001;
+  const data = loadJson(COUNTER_FILE, { counter: 400000001 });
+  if (!data.counter) data.counter = 400000001;
   const current = data.counter;
   data.counter = current + 1;
   saveJson(COUNTER_FILE, data);
-  return `ASOSBOOK-${current}`;
+  return `ASOSCXL-${current}`;
 }
 
 /**
@@ -106,6 +111,16 @@ function setBookingVersion(bookingRef, version) {
   saveJson(VERSIONS_FILE, data);
 }
 
+// Carton type dimensions (same master as CarrierBookingStub).
+const CARTON_TYPES = {
+  'BDCM1': { weight: 1.40, L: 60.00, W: 30.00, H: 40.00 },
+  'BDCM3': { weight: 1.00, L: 45.00, W: 29.50, H: 18.80 },
+  'C5':    { weight: 1.00, L: 60.00, W: 30.00, H: 20.00 },
+  'A1':    { weight: 1.00, L: 59.50, W: 28.50, H: 37.50 },
+  'B1':    { weight: 1.00, L: 52.00, W: 25.50, H: 37.50 },
+  'C1':    { weight: 1.00, L: 45.00, W: 28.50, H: 37.50 },
+};
+
 /**
  * Build a VBKREQ cancellation XML string from a single booking row
  * (as returned by databricks-cancel-reader).
@@ -117,7 +132,8 @@ function setBookingVersion(bookingRef, version) {
 function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
   const now        = nowStr();
   const ctrlNumber = nextCtrlNumber();
-  const bookingRef = row.Booking_Ref || row.ASN_Ref || `VB-${row.ASN_Ref}`;
+  // Booking ref comes from Databricks dim_carrier_booking_v1 via the reader.
+  const bookingRef = row.Booking_Ref || row.ASN_Ref;
   const version    = getBookingVersion(bookingRef);
 
   const fcId      = row.FC_ID || 'FC01';
@@ -197,10 +213,10 @@ function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
   msg.ele('Status').ele('Date', { DateTypeCd: '211',  TimeZone: 'LT' }).txt(now);
   msg.ele('Status').ele('Date', { DateTypeCd: 'OSBT', TimeZone: 'LT' }).txt(now);
   if (row.Ship_Date) {
-    msg.ele('Status').ele('Date', { DateTypeCd: '238' }).txt(row.Ship_Date);
+    msg.ele('Status').ele('Date', { DateTypeCd: '238' }).txt(ymd(row.Ship_Date));
   }
   if (row.Expected_Delivery_Date) {
-    msg.ele('Status').ele('Date', { DateTypeCd: '065' }).txt(row.Expected_Delivery_Date);
+    msg.ele('Status').ele('Date', { DateTypeCd: '065' }).txt(ymd(row.Expected_Delivery_Date));
   }
   msg.ele('Status').ele('Date', { DateTypeCd: 'OSBK' }).txt(now);
   msg.ele('Status').ele('Date', { DateTypeCd: 'SBK'  }).txt(now);
@@ -217,19 +233,33 @@ function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
   }
 
   // Order lines
-  const poNum  = row.PO_Number || '';
-  const order  = doc.ele('Order', { Key: poNum, OrderType: 'PO' });
+  const poNum   = row.PO_Number || '';
+  const asnRef  = row.ASN_Ref  || '';
+  const order   = doc.ele('Order', { Key: poNum, OrderType: 'PO' });
   order.ele('OrderID').txt(poNum);
 
-  const skuLines = row._skuLines || [];
+  const skuLines  = row._skuLines || [];
+  const ct        = CARTON_TYPES['BDCM1'];
   for (const line of skuLines) {
-    const li = order.ele('LineItem', { Key: line.sku || line.poId });
-    li.ele('Reference', { RefTypeCd: 'BV' }).txt(String(row.ASN_Ref || ''));
-    li.ele('OrderID').txt(String(line.poId || poNum));
-    if (line.sku) li.ele('ProductID', { Qualifier: 'SK' }).txt(line.sku);
-    if (line.qty > 0) {
-      li.ele('Measure', { Qualifier: 'BKQ', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'UN' }).txt(line.qty.toFixed(6));
-    }
+    const lineKey     = `${line.poId}_${line.sku}_${line.asnId || asnRef}`;
+    const description = line.description || `SKU ${line.sku}`;
+    const li = order.ele('LineItem', { Key: lineKey });
+    li.ele('LineItemDescription').txt(description);
+    li.ele('Attribute', { AttributeTypeCd: 'SI' }).txt(line.asnId || asnRef);
+    li.ele('Attribute', { AttributeTypeCd: 'SK' }).txt(line.sku);
+    li.ele('Reference', { RefTypeCd: 'PAC', SourceRefTypeCd: '128' }).txt('Bulk Flat');
+    li.ele('Reference', { RefTypeCd: 'HZ',  SourceRefTypeCd: '128' }).txt('N/A');
+    li.ele('Reference', { RefTypeCd: 'DSC', SourceRefTypeCd: '128' }).txt(description);
+    li.ele('Reference', { RefTypeCd: '98',  SourceRefTypeCd: '128' }).txt('BDCM1');
+    li.ele('Reference', { RefTypeCd: 'LN',  SourceRefTypeCd: '128' }).txt(ct.L.toFixed(2));
+    li.ele('Reference', { RefTypeCd: 'WD',  SourceRefTypeCd: '128' }).txt(ct.W.toFixed(2));
+    li.ele('Reference', { RefTypeCd: 'HT',  SourceRefTypeCd: '128' }).txt(ct.H.toFixed(2));
+    li.ele('Measure', { Qualifier: 'BKQ', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'UN' }).txt(line.qty.toFixed(6));
+    li.ele('Measure', { Qualifier: 'G',   SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'KG' }).txt('1.0000');
+    li.ele('Measure', { Qualifier: 'N',   SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'KG' }).txt('1.0000');
+    li.ele('Measure', { Qualifier: 'VOL', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'M3' }).txt('1.0000');
+    li.ele('Measure', { Qualifier: 'QUR', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'CT' }).txt('1.0000');
+    li.ele('TradePartner', { RoleCd: 'FS' }).ele('TradePartnerID', { Qualifier: '93' }).txt(line.fcId || fcId);
   }
 
   return {

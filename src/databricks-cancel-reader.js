@@ -30,6 +30,16 @@ function toDateStr(val) {
   return iso === '1900-01-01' ? '' : iso;
 }
 
+/** Map freight forwarder service description → E2open transport mode code. */
+function resolveTransportMode(freightService) {
+  const s = String(freightService || '').toLowerCase();
+  if (!s || s === 'unknown') return '30';
+  if (/\bair\b/.test(s))                     return '40';
+  if (/sea|ocean|fcl|lcl|maritime/.test(s))   return '10';
+  if (/rail/.test(s))                         return '50';
+  return '30'; // road/truck default for UK/EU nominated carriers
+}
+
 /**
  * Fetch booking data from Databricks for the given PO reference numbers.
  *
@@ -67,15 +77,19 @@ async function fetchCancelDataByPoRefs(poRefs) {
         CAST(f.dim_final_warehouse_sk AS STRING)                                   AS finalDestination,
         f.is_booked_by_carrier,
         f.quantity                                                                 AS bookedQty,
+        f.dim_purchase_order_shipping_method_sk                                    AS shippingMethod,
         CAST(f.dim_expected_factory_date_sk                                AS STRING) AS exFactoryDate,
         CAST(f.dim_expected_shipment_date_sk                               AS STRING) AS expectedShipmentDate,
         CAST(f.dim_first_warehouse_current_expected_delivery_date_sk       AS STRING) AS expectedDeliveryDate,
         f.dim_factory_sk,
-        f.dim_supplier_sk
+        f.dim_supplier_sk,
+        -- 1 if any SKU row in this ASN has been booked; used to filter out unbooked ASNs
+        MAX(CASE WHEN f.is_booked_by_carrier = 'Yes' THEN 1 ELSE 0 END) OVER (
+          PARTITION BY f.dim_advanced_shipment_notice_sk
+        )                                                                          AS asnIsBooked
       FROM sourcingandbuying.serve.fact_purchase_order_commitment_v1 f
       WHERE f.dim_purchase_order_sk IN (${poList})
         AND f.dim_advanced_shipment_notice_sk != 'Unknown'
-        AND f.is_booked_by_carrier = 'Yes'
       QUALIFY ROW_NUMBER() OVER (
         PARTITION BY f.dim_purchase_order_sk, f.dim_advanced_shipment_notice_sk, f.dim_product_sk
         ORDER BY f.dim_date_sk DESC
@@ -89,13 +103,16 @@ async function fetchCancelDataByPoRefs(poRefs) {
       lf.finalDestination,
       lf.is_booked_by_carrier    AS isBookedByCarrier,
       lf.bookedQty,
+      lf.shippingMethod,
       lf.exFactoryDate,
       lf.expectedShipmentDate,
       lf.expectedDeliveryDate,
+      lf.asnIsBooked,
       asn.asn_id,
       asn.asn_status_code,
       asn.carrier_code,
       asn.lading_port_code,
+      cb.inbound_carrier_booking_reference  AS vbBookingRef,
       sup.supplier_id,
       sup.supplier               AS supplierName,
       sup.primary_country_code   AS supplierCountry,
@@ -103,6 +120,7 @@ async function fetchCancelDataByPoRefs(poRefs) {
       fac.factory                AS factoryName,
       fac.factory_country_code,
       po.inco_terms,
+      po.purchase_order_freight_forwarder_service  AS freightService,
       DATE_FORMAT(po.dim_original_purchase_order_shipment_date_sk,           'yyyy-MM-dd') AS poShipDate,
       DATE_FORMAT(po.dim_current_requested_intake_first_destination_date_sk, 'yyyy-MM-dd') AS poDeliveryDate
     FROM latest_facts lf
@@ -114,8 +132,18 @@ async function fetchCancelDataByPoRefs(poRefs) {
            ON lf.dim_factory_sk = fac.dim_factory_sk
     LEFT JOIN sourcingandbuying.serve.dim_purchase_order_v1 po
            ON lf.poId = po.dim_purchase_order_sk
+    LEFT JOIN supplychain.serve.fact_carrier_bookings_v1 cbf
+           ON cbf.asn_id = asn.asn_id
+    LEFT JOIN supplychain.serve.dim_carrier_booking_v1 cb
+           ON cb.dim_carrier_booking_sk = cbf.dim_carrier_booking_sk
     WHERE asn.asn_id IS NOT NULL
       AND (asn.asn_status_code IS NULL OR asn.asn_status_code != 'D')
+      AND lf.asnIsBooked = 1
+    -- deduplicate: one booking ref row per ASN (latest booking wins)
+    QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY lf.asnId, lf.poId, lf.sku
+      ORDER BY cbf.dim_supplier_booked_date_sk DESC NULLS LAST
+    ) = 1
     ORDER BY lf.asnId, lf.poId, lf.sku
   `;
 
@@ -149,7 +177,9 @@ async function fetchCancelDataByPoRefs(poRefs) {
         Factory_Name:              row.factoryName     || '',
         Factory_CountryCd:         row.factory_country_code || '',
         Loading_Port_LOCODE:       row.lading_port_code || '',
-        Mode_Of_Transport:         row.carrier_code    || '30',
+        // shippingMethod is the E2open mode code (10/30/40) stored directly on the fact
+        Mode_Of_Transport:         row.shippingMethod  || '30',
+        Carrier_ID:                row.carrier_code    || '3',
         Ship_Date:                 toDateStr(row.poShipDate || row.expectedShipmentDate),
         Expected_Delivery_Date:    toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
         // Booking quantities (aggregate over lines below)
@@ -166,8 +196,10 @@ async function fetchCancelDataByPoRefs(poRefs) {
         Cargo_Ready_Planned_Collection_Date: '',
         Carrier_Booking_Request_Date:        '',
         ASN_Delivery_Date:         toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
-        // Booking_Ref set below via state file lookup
-        Booking_Ref:               null,
+        // Use AIM carrier booking ref from Databricks; fall back to asn_id if not yet booked
+        Booking_Ref: (row.vbBookingRef && row.vbBookingRef !== 'Unknown')
+                       ? row.vbBookingRef
+                       : asnKey,
         _skuLines: [],
       };
     }
@@ -178,6 +210,8 @@ async function fetchCancelDataByPoRefs(poRefs) {
       sku:    String(row.sku       || ''),
       qty:    parseFloat(row.bookedQty || 0),
       poId:   String(row.poId     || ''),
+      asnId:  asnKey,
+      fcId:   String(row.firstDestination || 'FC01'),
     });
   }
 
