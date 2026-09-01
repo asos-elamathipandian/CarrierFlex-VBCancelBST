@@ -1,0 +1,24 @@
+{
+  "name": "carrierflex-vbcancel-bst",
+  "version": "1.0.0",
+  "description": "CarrierFlex — VB Cancellation (VBKREQ purposeCd=01) and BST message generation for E2open",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "cancel-once": "node src/run-cancel-once.js",
+    "bst-once": "node src/run-bst-once.js",
+    "cancel": "node src/run-cancel-once.js",
+    "bst": "node src/run-bst-once.js"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.1",
+    "@azure/service-bus": "^7.9.0",
+    "@databricks/sql": "^2.0.0",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^17.0.0",
+    "exceljs": "^4.4.0",
+    "node-cron": "^4.5.0",
+    "ssh2-sftp-client": "^11.0.0",
+    "xmlbuilder2": "^4.0.3"
+  }
+}

@@ -1,0 +1,18 @@
+# Generated XML output files
+/output/
+!/output/.gitkeep
+
+# Runtime state (counters, logs, temp files)
+/state/
+!/state/.gitkeep
+
+# Local input files (real carrier data)
+/input/
+!/input/bst-input.csv
+
+# Environment secrets — never commit
+config/.env
+config/inputs.json
+
+# Node modules
+node_modules/
