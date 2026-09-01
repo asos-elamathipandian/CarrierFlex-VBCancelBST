@@ -34,6 +34,8 @@ module.exports = {
     clientSecret: optional('SP_CLIENT_SECRET'),
   },
 
+  sftpEnv: optional('SFTP_ENV', 'test').toLowerCase(),
+
   sftpE2open: {
     host:               optional('SFTP_HOST'),
     port:               parseInt(optional('SFTP_PORT', '22'), 10),
@@ -44,6 +46,18 @@ module.exports = {
     passphrase:         optional('SFTP_PASSPHRASE'),
     vbkreqRemoteDir:    optional('SFTP_VBKREQ_REMOTE_DIR', '/inbound/vbkreq/'),
     bstRemoteDir:       optional('SFTP_BST_REMOTE_DIR',    '/inbound/bst/'),
+  },
+
+  sftpE2openProd: {
+    host:               optional('PROD_SFTP_HOST'),
+    port:               parseInt(optional('PROD_SFTP_PORT', '22'), 10),
+    username:           optional('PROD_SFTP_USERNAME'),
+    password:           optional('PROD_SFTP_PASSWORD'),
+    privateKeyPath:     optional('PROD_SFTP_PRIVATE_KEY_PATH'),
+    privateKeyContent:  optional('PROD_SFTP_PRIVATE_KEY_CONTENT'),
+    passphrase:         optional('PROD_SFTP_PASSPHRASE'),
+    vbkreqRemoteDir:    optional('PROD_SFTP_VBKREQ_REMOTE_DIR', '/inbound/vbkreq/'),
+    bstRemoteDir:       optional('PROD_SFTP_BST_REMOTE_DIR',    '/inbound/bst/'),
   },
 
   sftpCarrier: {

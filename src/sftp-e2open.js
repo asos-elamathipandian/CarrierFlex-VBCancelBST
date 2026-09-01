@@ -16,6 +16,13 @@ const fs   = require('fs');
 const path = require('path');
 const cfg  = require('./config');
 
+// Returns the active SFTP profile based on SFTP_ENV.
+function activeProfile() {
+  const isProd = cfg.sftpEnv === 'prod';
+  if (isProd) console.log('[SFTP E2open] Using PROD endpoint');
+  return isProd ? cfg.sftpE2openProd : cfg.sftpE2open;
+}
+
 function resolveKey(content, keyPath) {
   if (content) {
     // Accept raw PEM/PPK or base64-encoded
@@ -31,7 +38,7 @@ function resolveKey(content, keyPath) {
 }
 
 function buildConnectOptions() {
-  const { host, port, username, password, privateKeyPath, privateKeyContent, passphrase } = cfg.sftpE2open;
+  const { host, port, username, password, privateKeyPath, privateKeyContent, passphrase } = activeProfile();
 
   if (!host || !username) return null; // not configured
 
@@ -70,6 +77,7 @@ async function upload(localFilePath, remoteDir) {
   const opts = buildConnectOptions();
   if (!opts) return saveLocally(localFilePath, remoteDir);
 
+
   const sftp       = new SftpClient();
   const remotePath = `${remoteDir.replace(/\/$/, '')}/${path.basename(localFilePath)}`;
 
@@ -85,11 +93,11 @@ async function upload(localFilePath, remoteDir) {
 
 /** Convenience wrappers for each message type. */
 async function uploadVbkreq(localFilePath) {
-  return upload(localFilePath, cfg.sftpE2open.vbkreqRemoteDir);
+  return upload(localFilePath, activeProfile().vbkreqRemoteDir);
 }
 
 async function uploadBst(localFilePath) {
-  return upload(localFilePath, cfg.sftpE2open.bstRemoteDir);
+  return upload(localFilePath, activeProfile().bstRemoteDir);
 }
 
 module.exports = { upload, uploadVbkreq, uploadBst };
