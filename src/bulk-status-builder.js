@@ -38,6 +38,15 @@ function formatDateTimeUtc(value) {
   const trimmed = String(value).trim();
   if (!trimmed) return null;
 
+  const dmy = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (dmy) {
+    const [, day, month, year, hh = '00', mi = '00', ss = '00'] = dmy;
+    const time = (hh === '00' && mi === '00' && ss === '00')
+      ? ''
+      : ` ${pad(Number(hh))}:${pad(Number(mi))}:${pad(Number(ss))}`;
+    return `${pad(Number(day))}/${pad(Number(month))}/${year}${time}`;
+  }
+
   const isoLike = trimmed.replace(/\s+/g, ' ').replace(/\./g, ':');
   const d = new Date(isoLike);
   if (!Number.isNaN(d.getTime())) {
@@ -47,19 +56,22 @@ function formatDateTimeUtc(value) {
     const hh = pad(d.getUTCHours());
     const mi = pad(d.getUTCMinutes());
     const ss = pad(d.getUTCSeconds());
-    return `${y}${m}${day} ${hh}${mi}${ss}`;
+    return `${day}/${m}/${y} ${hh}:${mi}:${ss}`;
   }
 
   const m = trimmed.match(/^(\d{4})(\d{2})(\d{2})(?:\s+(\d{2})(\d{2})(\d{2}))?$/);
   if (m) {
     const [, y, mo, d2, hh = '00', mi = '00', ss = '00'] = m;
-    return `${y}${mo}${d2} ${hh}${mi}${ss}`;
+    const day = d2;
+    const month = mo;
+    const time = (hh === '00' && mi === '00' && ss === '00') ? '' : ` ${hh}:${mi}:${ss}`;
+    return `${day}/${month}/${y}${time}`;
   }
 
   const m2 = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
   if (m2) {
     const [, y, mo, d2, hh, mi, ss] = m2;
-    return `${y}${mo}${d2} ${hh}${mi}${ss}`;
+    return `${d2}/${mo}/${y} ${hh}:${mi}:${ss}`;
   }
 
   return null;
@@ -67,7 +79,7 @@ function formatDateTimeUtc(value) {
 
 function buildEventDates(dateEvents = {}) {
   const entries = [];
-  const orderedCodes = ['VBKC', 'HNDOVR', 'SO', 'A', 'RLSC', 'QARD'];
+  const orderedCodes = ['080', 'HNDOVR', 'DO', 'A', '135', 'QARD'];
 
   for (const code of orderedCodes) {
     const value = dateEvents[code];

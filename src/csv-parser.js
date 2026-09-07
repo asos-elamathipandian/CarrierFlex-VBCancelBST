@@ -28,12 +28,12 @@ const CARRIER_ALIASES = ['carrier', 'carrier_code', 'carriercode'];
 const LOCATION_ALIASES = ['handoverlocation', 'handover_location', 'locode', 'location'];
 
 const BST_DATE_ALIASES = {
-  VBKC: ['vbkc', 'vbkc_booking_confirmation', 'booking_confirmation', 'booking_confirm'],
+  '080': ['080', 'vbkc', 'vbkc_booking_confirmation', 'booking_confirmation', 'booking_confirm'],
   HNDOVR: ['hndovr', 'handover', 'picked_up_collection_by_dhl', 'hndovr_picked_up_collection_by_dhl'],
-  SO: ['so', 's_o', 'do', 'departure', 'departure_actual_flight_depart', 'departure_actual_flight_departure'],
+  DO: ['do', 'shipment_date', 'so', 's_o', 'departure', 'departure_actual_flight_depart', 'departure_actual_flight_departure'],
   A: ['a', 'arrival', 'arrival_plane_arrives_at_port_of_destination'],
-  RLSC: ['rlsc', 'customs_cleared', 'customs_clearance', 'rlsc_customs_cleared'],
-  QARD: ['qard', 'goods_delivered_to_asos_fc', 'qar_d', 'qard_goods_delivered_to_asos_fc'],
+  '135': ['135', 'rlsc', 'customs_cleared', 'customs_clearance', 'rlsc_customs_cleared'],
+  QARD: ['qard', 'goods_delivered_to_asos_fc', 'qar_d'],
 };
 
 function normaliseHeader(h) {
@@ -44,10 +44,28 @@ function normaliseHeader(h) {
     .replace(/^_|_$/g, '');
 }
 
+function normaliseAsn(raw) {
+  if (raw === null || raw === undefined) return null;
+
+  const value = String(raw).trim();
+  if (!value) return null;
+
+  const cleaned = value.replace(/[\s,]/g, '');
+  if (!cleaned) return null;
+
+  // Preserve scientific notation instead of rounding it into a different number.
+  // The upstream CSV must export the exact 14-digit ASN as plain text.
+  return cleaned;
+}
+
 function pick(row, aliases) {
   for (const alias of aliases) {
-    if (row[alias] !== undefined && row[alias] !== '') return String(row[alias]).trim();
+    const target = normaliseHeader(alias);
+    if (row[target] !== undefined && row[target] !== '') {
+      return String(row[target]).trim();
+    }
   }
+
   return null;
 }
 
@@ -67,7 +85,8 @@ function normaliseRow(rawRow) {
     row[normaliseHeader(k)] = v;
   }
 
-  const asn             = pick(row, ASN_ALIASES);
+  const asnRaw          = pick(row, ASN_ALIASES);
+  const asn             = asnRaw ? normaliseAsn(asnRaw) : null;
   const carrier         = pick(row, CARRIER_ALIASES) || cfg.carrier;
   const handoverLocation = pick(row, LOCATION_ALIASES) || 'TRIST';
   const dateEvents      = pickDateEvent(row);
