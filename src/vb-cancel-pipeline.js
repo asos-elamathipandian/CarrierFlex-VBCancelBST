@@ -15,7 +15,7 @@
 const path = require('path');
 const fs   = require('fs');
 const cfg  = require('./config');
-const { fetchCancelDataByPoRefs } = require('./databricks-cancel-reader');
+const { fetchCancelDataByRefs } = require('./databricks-cancel-reader');
 const { buildCancelXml }         = require('./vbkreq-cancel-builder');
 const { uploadVbkreq }           = require('./sftp-e2open');
 const { getCarrierProfile }      = require('./carrier-profile');
@@ -37,25 +37,35 @@ function appendLog(entry) {
 }
 
 /**
- * Process a PO cancel event — the main entry point called by service-bus-listener.
+ * Process a cancel event — either by PO refs or ASN refs.
  *
- * @param {string[]} poRefs - list of PO numbers to cancel bookings for
+ * @param {string[]|{poRefs?: string[], asnRefs?: string[]}} input
  * @returns {Promise<{ processed: number, skipped: number, errors: string[] }>}
  */
-async function processCancelEvent(poRefs) {
+async function processCancelEvent(input) {
   const startTime = new Date().toISOString();
-  console.log(`[VB Cancel] Processing ${poRefs.length} PO ref(s): ${poRefs.join(', ')}`);
 
-  const { bookingRows, errors: fetchErrors } = await fetchCancelDataByPoRefs(poRefs);
+  const isObjectInput = input && typeof input === 'object' && !Array.isArray(input);
+  const poRefs = isObjectInput ? (input.poRefs || []) : (Array.isArray(input) ? input : []);
+  const asnRefs = isObjectInput ? (input.asnRefs || []) : [];
+
+  if (asnRefs.length) {
+    console.log(`[VB Cancel] Processing ${asnRefs.length} ASN ref(s): ${asnRefs.join(', ')}`);
+  } else {
+    console.log(`[VB Cancel] Processing ${poRefs.length} PO ref(s): ${poRefs.join(', ')}`);
+  }
+
+  const { bookingRows, errors: fetchErrors } = await fetchCancelDataByRefs({ poRefs, asnRefs });
 
   if (fetchErrors.length) {
     console.warn('[VB Cancel] Databricks fetch warnings:', fetchErrors.join('; '));
   }
 
   if (!bookingRows.length) {
-    const msg = `No active bookings found for PO(s): ${poRefs.join(', ')}`;
+    const refLabel = asnRefs.length ? `ASN(s): ${asnRefs.join(', ')}` : `PO(s): ${poRefs.join(', ')}`;
+    const msg = `No active bookings found for ${refLabel}`;
     console.warn(`[VB Cancel] ${msg}`);
-    appendLog({ timestamp: startTime, poRefs, processed: 0, skipped: 0, errors: [msg, ...fetchErrors] });
+    appendLog({ timestamp: startTime, poRefs, asnRefs, processed: 0, skipped: 0, errors: [msg, ...fetchErrors] });
     return { processed: 0, skipped: 0, errors: [msg, ...fetchErrors] };
   }
 
@@ -80,6 +90,7 @@ async function processCancelEvent(poRefs) {
       appendLog({
         timestamp:  new Date().toISOString(),
         poRefs,
+        asnRefs,
         asnRef:     row.ASN_Ref,
         bookingRef,
         filename,

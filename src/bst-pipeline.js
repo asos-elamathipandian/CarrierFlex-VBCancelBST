@@ -76,6 +76,7 @@ async function processFile(localPath, fileName) {
         asn:             row.asn,
         carrier:         row.carrier || cfg.carrier,
         handoverLocation: row.handoverLocation,
+        dateEvents:      row.dateEvents || {},
         outputDir:       cfg.outputDir,
       });
       console.log(`[BST] Written: ${xmlName}`);

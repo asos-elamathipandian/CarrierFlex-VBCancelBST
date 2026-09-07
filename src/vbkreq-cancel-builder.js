@@ -44,6 +44,15 @@ const MODE_MAP = {
   'ECO': '70',
 };
 
+const DEFAULT_VB_REF = 'VB-1000000206';
+
+function resolveBookingRef(row) {
+  const raw = row && (row.Booking_Ref || row.ASN_Ref || '');
+  const val = String(raw || '').trim();
+  if (val && val !== 'Unknown') return val;
+  return DEFAULT_VB_REF;
+}
+
 function resolveMode(val) {
   if (!val) return '30';
   return MODE_MAP[String(val).toUpperCase().trim()] || String(val).trim() || '30';
@@ -132,13 +141,8 @@ const CARTON_TYPES = {
 function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
   const now        = nowStr();
   const ctrlNumber = nextCtrlNumber();
-  // Booking ref comes from Databricks dim_carrier_booking_v1 via the reader.
-  const bookingRef = row.Booking_Ref || row.ASN_Ref;
+  const bookingRef = resolveBookingRef(row);
   const version    = getBookingVersion(bookingRef);
-
-  const fcId      = row.FC_ID || 'FC01';
-  const destLocode = FC_LOCODE[fcId] || 'GBBSY';
-  const modeCode   = resolveMode(row.Mode_Of_Transport);
   const filename   = `${carrierSenderId}_E2ASOS_VBKREQ_1.0_${nowFilenameStr()}${ctrlNumber.replace('ASOSBOOK-', '')}.xml`;
 
   const root = create({ version: '1.0', encoding: 'UTF-8' })
@@ -153,113 +157,33 @@ function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
 
   const grp = tx.ele('XMLGroup', { CtrlNumber: ctrlNumber, GroupType: 'BP', IncludedMessages: '1' });
   const trx = grp.ele('XMLTransaction', { CtrlNumber: ctrlNumber, TransactionType: 'BPM-VBKREQ' });
-
   const msg = trx.ele('BpMessage', { MessageType: 'VBKREQ', PurposeCd: '01' });
 
-  msg.ele('Mode').txt(modeCode);
-  msg.ele('Reference', { RefTypeCd: 'QY',  SourceRefTypeCd: '128' }).txt(row.Traffic_Mode || 'CFS');
-  msg.ele('Reference', { RefTypeCd: '4B',  SourceRefTypeCd: '128' }).txt(row.Country_Of_Origin || row.Factory_CountryCd || 'XX');
-  msg.ele('Reference', { RefTypeCd: 'BH',  SourceRefTypeCd: '128' }).txt(row.Hazardous ? 'Y' : 'N');
-  msg.ele('Reference', { RefTypeCd: 'CC',  SourceRefTypeCd: '128' }).txt('Green');
-  msg.ele('Reference', { RefTypeCd: 'CD',  SourceRefTypeCd: '128' }).txt(row.Collection_Type || 'Delivery');
-
-  // Supplier (SU)
   if (row.Supplier_Name || row.Supplier_ID) {
     const su = msg.ele('TradePartner', { RoleCd: 'SU' });
     if (row.Supplier_Name) su.ele('TradePartnerName').txt(row.Supplier_Name);
     if (row.Supplier_ID)   su.ele('TradePartnerID', { Qualifier: '93' }).txt(row.Supplier_ID);
   }
 
-  // Factory (FA)
-  if (row.Factory_Name || row.Factory_ID) {
-    const fa = msg.ele('TradePartner', { RoleCd: 'FA' });
-    if (row.Factory_Name)    fa.ele('TradePartnerName').txt(row.Factory_Name);
-    if (row.Factory_ID)      fa.ele('TradePartnerID', { Qualifier: '93' }).txt(row.Factory_ID);
-    if (row.Factory_CountryCd) {
-      fa.ele('TradePartnerAddress').ele('CountryCd').txt(row.Factory_CountryCd);
-    }
-  }
-
-  // Final Destination (FD)
-  const fd    = msg.ele('TradePartner', { RoleCd: 'FD' });
-  const fcAddr = FC_ADDRESS[fcId];
-  fd.ele('TradePartnerName').txt(fcAddr ? fcAddr.name : (row.FC_Name || fcId));
-  fd.ele('TradePartnerID', { Qualifier: '93' }).txt(fcId);
-  const addrFD = fd.ele('TradePartnerAddress');
-  if (fcAddr) {
-    fcAddr.streets.forEach(s => addrFD.ele('Street').txt(s));
-    addrFD.ele('City').txt(fcAddr.city);
-    addrFD.ele('StateProvinceCd').txt(fcAddr.stateProvinceCd);
-    addrFD.ele('PostalCd').txt(fcAddr.postalCd);
-    addrFD.ele('CountryCd').txt(fcAddr.countryCd);
-  } else {
-    addrFD.ele('CountryCd').txt(row.FC_CountryCd || 'GB');
-  }
-
-  // Carrier (CA)
   const ca = msg.ele('TradePartner', { RoleCd: 'CA' });
   ca.ele('TradePartnerID', { Qualifier: '93' }).txt(row.Carrier_ID || '3');
 
-  // Loading port
-  if (row.Loading_Port_LOCODE) {
-    msg.ele('Status')
-      .ele('Location', { LocTypeCd: 'L' })
-      .ele('LocationID', { Qualifier: 'UN' }).txt(row.Loading_Port_LOCODE);
-  }
+  msg.ele('Status').ele('Date', { DateTypeCd: '177', TimeZone: 'LT' }).txt(now);
 
-  msg.ele('Status').ele('Location', { LocTypeCd: 'E' }).ele('LocationID', { Qualifier: 'UN' }).txt(destLocode);
-  msg.ele('Status').ele('Location', { LocTypeCd: 'D' }).ele('LocationID', { Qualifier: 'UN' }).txt(destLocode);
-
-  msg.ele('Status').ele('Date', { DateTypeCd: '211',  TimeZone: 'LT' }).txt(now);
-  msg.ele('Status').ele('Date', { DateTypeCd: 'OSBT', TimeZone: 'LT' }).txt(now);
-  if (row.Ship_Date) {
-    msg.ele('Status').ele('Date', { DateTypeCd: '238' }).txt(ymd(row.Ship_Date));
-  }
-  if (row.Expected_Delivery_Date) {
-    msg.ele('Status').ele('Date', { DateTypeCd: '065' }).txt(ymd(row.Expected_Delivery_Date));
-  }
-  msg.ele('Status').ele('Date', { DateTypeCd: 'OSBK' }).txt(now);
-  msg.ele('Status').ele('Date', { DateTypeCd: 'SBK'  }).txt(now);
-  // Cancellation date (mandatory for PurposeCd 01)
-  msg.ele('Status').ele('Date', { DateTypeCd: '177',  TimeZone: 'LT' }).txt(now);
-
-  // Document
-  const bkqTotal = parseFloat(row.Header_Booking_Qty || row.Booking_Qty || 0);
   const doc = msg.ele('Document', { DocType: 'BOOK', Key: bookingRef });
   doc.ele('Reference', { RefTypeCd: 'ACE', SourceRefTypeCd: '128' }).txt(bookingRef);
-  doc.ele('Reference', { RefTypeCd: 'V0',  SourceRefTypeCd: '128' }).txt(version);
-  if (bkqTotal > 0) {
-    doc.ele('Measure', { Qualifier: 'BKQ', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'UN' }).txt(bkqTotal.toFixed(6));
-  }
+  doc.ele('Reference', { RefTypeCd: 'V0', SourceRefTypeCd: '128' }).txt(version);
 
-  // Order lines
-  const poNum   = row.PO_Number || '';
-  const asnRef  = row.ASN_Ref  || '';
-  const order   = doc.ele('Order', { Key: poNum, OrderType: 'PO' });
+  const poNum = row.PO_Number || '';
+  const asnRef = row.ASN_Ref || '';
+  const order = doc.ele('Order', { Key: poNum, OrderType: 'PO' });
   order.ele('OrderID').txt(poNum);
 
-  const skuLines  = row._skuLines || [];
-  const ct        = CARTON_TYPES['BDCM1'];
+  const skuLines = row._skuLines || [];
   for (const line of skuLines) {
-    const lineKey     = `${line.poId}_${line.sku}_${line.asnId || asnRef}`;
-    const description = line.description || `SKU ${line.sku}`;
+    const lineKey = `${line.poId}_${line.sku}_${line.asnId || asnRef}`;
     const li = order.ele('LineItem', { Key: lineKey });
-    li.ele('LineItemDescription').txt(description);
     li.ele('Attribute', { AttributeTypeCd: 'SI' }).txt(line.asnId || asnRef);
-    li.ele('Attribute', { AttributeTypeCd: 'SK' }).txt(line.sku);
-    li.ele('Reference', { RefTypeCd: 'PAC', SourceRefTypeCd: '128' }).txt('Bulk Flat');
-    li.ele('Reference', { RefTypeCd: 'HZ',  SourceRefTypeCd: '128' }).txt('N/A');
-    li.ele('Reference', { RefTypeCd: 'DSC', SourceRefTypeCd: '128' }).txt(description);
-    li.ele('Reference', { RefTypeCd: '98',  SourceRefTypeCd: '128' }).txt('BDCM1');
-    li.ele('Reference', { RefTypeCd: 'LN',  SourceRefTypeCd: '128' }).txt(ct.L.toFixed(2));
-    li.ele('Reference', { RefTypeCd: 'WD',  SourceRefTypeCd: '128' }).txt(ct.W.toFixed(2));
-    li.ele('Reference', { RefTypeCd: 'HT',  SourceRefTypeCd: '128' }).txt(ct.H.toFixed(2));
-    li.ele('Measure', { Qualifier: 'BKQ', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'UN' }).txt(line.qty.toFixed(6));
-    li.ele('Measure', { Qualifier: 'G',   SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'KG' }).txt('1.0000');
-    li.ele('Measure', { Qualifier: 'N',   SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'KG' }).txt('1.0000');
-    li.ele('Measure', { Qualifier: 'VOL', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'M3' }).txt('1.0000');
-    li.ele('Measure', { Qualifier: 'QUR', SourceQualifier: '738', SourceUOMCd: '355', UOMCd: 'CT' }).txt('1.0000');
-    li.ele('TradePartner', { RoleCd: 'FS' }).ele('TradePartnerID', { Qualifier: '93' }).txt(line.fcId || fcId);
   }
 
   return {

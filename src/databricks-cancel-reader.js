@@ -196,10 +196,10 @@ async function fetchCancelDataByPoRefs(poRefs) {
         Cargo_Ready_Planned_Collection_Date: '',
         Carrier_Booking_Request_Date:        '',
         ASN_Delivery_Date:         toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
-        // Use AIM carrier booking ref from Databricks; fall back to asn_id if not yet booked
+        // Use the accepted default VB booking ref when no valid ref is available.
         Booking_Ref: (row.vbBookingRef && row.vbBookingRef !== 'Unknown')
                        ? row.vbBookingRef
-                       : asnKey,
+                       : 'VB-1000000206',
         _skuLines: [],
       };
     }
@@ -221,4 +221,124 @@ async function fetchCancelDataByPoRefs(poRefs) {
   return { bookingRows, errors: [] };
 }
 
-module.exports = { fetchCancelDataByPoRefs };
+async function fetchCancelDataByAsnRefs(asnRefs) {
+  if (!asnRefs || asnRefs.length === 0) {
+    return { bookingRows: [], errors: ['No ASN references provided'] };
+  }
+
+  const safeASNs = asnRefs
+    .map(a => String(a).trim())
+    .filter(a => a && a !== 'Unknown');
+
+  if (safeASNs.length === 0) {
+    return { bookingRows: [], errors: ['No valid ASN references provided'] };
+  }
+
+  console.log(`[Databricks Cancel] querying ${safeASNs.length} ASN(s): ${safeASNs.join(', ')}`);
+
+  const asnList = safeASNs.map(a => `'${String(a).replace(/'/g, "''")}'`).join(', ');
+
+  const sql = `
+    WITH latest_facts AS (
+      SELECT
+        f.dim_purchase_order_sk                                                    AS poId,
+        f.dim_advanced_shipment_notice_sk                                          AS asnId,
+        f.dim_product_sk                                                           AS sku,
+        CAST(f.dim_first_warehouse_sk AS STRING)                                   AS firstDestination,
+        CAST(f.dim_final_warehouse_sk AS STRING)                                   AS finalDestination,
+        f.is_booked_by_carrier,
+        f.quantity                                                                 AS bookedQty,
+        f.dim_purchase_order_shipping_method_sk                                    AS shippingMethod,
+        CAST(f.dim_expected_factory_date_sk                                AS STRING) AS exFactoryDate,
+        CAST(f.dim_expected_shipment_date_sk                               AS STRING) AS expectedShipmentDate,
+        CAST(f.dim_first_warehouse_current_expected_delivery_date_sk       AS STRING) AS expectedDeliveryDate,
+        f.dim_factory_sk,
+        f.dim_supplier_sk,
+        MAX(CASE WHEN f.is_booked_by_carrier = 'Yes' THEN 1 ELSE 0 END) OVER (
+          PARTITION BY f.dim_advanced_shipment_notice_sk
+        )                                                                          AS asnIsBooked
+      FROM sourcingandbuying.serve.fact_purchase_order_commitment_v1 f
+      INNER JOIN supplychain.serve.dim_advanced_shipment_notice_v1 asn
+        ON f.dim_advanced_shipment_notice_sk = asn.dim_advanced_shipment_notice_sk
+      WHERE asn.asn_id IN (${asnList})
+        AND f.dim_advanced_shipment_notice_sk != 'Unknown'
+      QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY f.dim_purchase_order_sk, f.dim_advanced_shipment_notice_sk, f.dim_product_sk
+        ORDER BY f.dim_date_sk DESC
+      ) = 1
+    )
+    SELECT
+      lf.poId,
+      lf.asnId,
+      lf.sku,
+      lf.firstDestination,
+      lf.finalDestination,
+      lf.is_booked_by_carrier    AS isBookedByCarrier,
+      lf.bookedQty,
+      lf.shippingMethod,
+      lf.exFactoryDate,
+      lf.expectedShipmentDate,
+      lf.expectedDeliveryDate,
+      lf.asnIsBooked,
+      asn.asn_id,
+      asn.asn_status_code,
+      asn.carrier_code,
+      asn.lading_port_code,
+      cb.inbound_carrier_booking_reference  AS vbBookingRef,
+      sup.supplier_id,
+      sup.supplier               AS supplierName,
+      sup.primary_country_code   AS supplierCountry,
+      fac.factory_code           AS factoryID,
+      fac.factory                AS factoryName,
+      fac.factory_country_code,
+      po.inco_terms,
+      po.purchase_order_freight_forwarder_service  AS freightService,
+      DATE_FORMAT(po.dim_original_purchase_order_shipment_date_sk,           'yyyy-MM-dd') AS poShipDate,
+      DATE_FORMAT(po.dim_current_requested_intake_first_destination_date_sk, 'yyyy-MM-dd') AS poDeliveryDate
+    FROM latest_facts lf
+    LEFT JOIN supplychain.serve.dim_advanced_shipment_notice_v1 asn
+           ON lf.asnId = asn.dim_advanced_shipment_notice_sk
+    LEFT JOIN sourcingandbuying.serve.dim_supplier_v1 sup
+           ON lf.dim_supplier_sk = sup.dim_supplier_sk
+    LEFT JOIN sourcingandbuying.serve.dim_factory_v1 fac
+           ON lf.dim_factory_sk = fac.dim_factory_sk
+    LEFT JOIN sourcingandbuying.serve.dim_purchase_order_v1 po
+           ON lf.poId = po.dim_purchase_order_sk
+    LEFT JOIN supplychain.serve.fact_carrier_bookings_v1 cbf
+           ON cbf.asn_id = asn.asn_id
+    LEFT JOIN supplychain.serve.dim_carrier_booking_v1 cb
+           ON cb.dim_carrier_booking_sk = cbf.dim_carrier_booking_sk
+    WHERE asn.asn_id IS NOT NULL
+      AND (asn.asn_status_code IS NULL OR asn.asn_status_code != 'D')
+      AND lf.asnIsBooked = 1
+    QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY lf.asnId, lf.poId, lf.sku
+      ORDER BY cbf.dim_supplier_booked_date_sk DESC NULLS LAST
+    ) = 1
+    ORDER BY lf.asnId, lf.poId, lf.sku
+  `;
+
+  let rows;
+  try {
+    rows = await db.query(sql);
+    console.log(`[Databricks Cancel] ${(rows || []).length} row(s) returned`);
+  } catch (err) {
+    return { bookingRows: [], errors: [`Databricks query failed: ${err.message}`] };
+  }
+
+  if (!rows || rows.length === 0) {
+    const missing = safeASNs.map(a => `No active booked ASN found for ASN ${a}`);
+    return { bookingRows: [], errors: missing };
+  }
+
+  return groupBookingRows(rows);
+}
+
+async function fetchCancelDataByRefs({ poRefs, asnRefs } = {}) {
+  if (asnRefs && asnRefs.length) {
+    return fetchCancelDataByAsnRefs(asnRefs);
+  }
+  return fetchCancelDataByPoRefs(poRefs || []);
+}
+
+module.exports = { fetchCancelDataByPoRefs, fetchCancelDataByAsnRefs, fetchCancelDataByRefs };

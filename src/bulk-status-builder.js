@@ -33,15 +33,63 @@ function addSeconds(d, s) {
   return new Date(d.getTime() + s * 1000);
 }
 
+function formatDateTimeUtc(value) {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+
+  const isoLike = trimmed.replace(/\s+/g, ' ').replace(/\./g, ':');
+  const d = new Date(isoLike);
+  if (!Number.isNaN(d.getTime())) {
+    const y = d.getUTCFullYear();
+    const m = pad(d.getUTCMonth() + 1);
+    const day = pad(d.getUTCDate());
+    const hh = pad(d.getUTCHours());
+    const mi = pad(d.getUTCMinutes());
+    const ss = pad(d.getUTCSeconds());
+    return `${y}${m}${day} ${hh}${mi}${ss}`;
+  }
+
+  const m = trimmed.match(/^(\d{4})(\d{2})(\d{2})(?:\s+(\d{2})(\d{2})(\d{2}))?$/);
+  if (m) {
+    const [, y, mo, d2, hh = '00', mi = '00', ss = '00'] = m;
+    return `${y}${mo}${d2} ${hh}${mi}${ss}`;
+  }
+
+  const m2 = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+  if (m2) {
+    const [, y, mo, d2, hh, mi, ss] = m2;
+    return `${y}${mo}${d2} ${hh}${mi}${ss}`;
+  }
+
+  return null;
+}
+
+function buildEventDates(dateEvents = {}) {
+  const entries = [];
+  const orderedCodes = ['VBKC', 'HNDOVR', 'SO', 'A', 'RLSC', 'QARD'];
+
+  for (const code of orderedCodes) {
+    const value = dateEvents[code];
+    const formatted = formatDateTimeUtc(value);
+    if (formatted) {
+      entries.push(`<Date DateTypeCd="${code}" TimeZone="UTC">${formatted}</Date>`);
+    }
+  }
+
+  return entries.join('\n');
+}
+
 /**
  * Build BST XML string for the given ASN.
  * handoverLocation: UN/LOCODE for the handover point (defaults to TRIST — Istanbul).
  */
-function buildBstXml({ asn, carrier = 'DT', handoverLocation = 'TRIST', now = new Date() }) {
+function buildBstXml({ asn, carrier = 'DT', handoverLocation = 'TRIST', now = new Date(), dateEvents = {} }) {
   const profile   = getCarrierProfile(carrier);
   const ctrl      = formatCtrl(now);
   const timestamp = formatTimestamp(now);
   const handover  = formatTimestamp(addSeconds(now, 3));
+  const eventDates = buildEventDates(dateEvents);
 
   return (
     `<XMLBundle>\n` +
@@ -51,7 +99,7 @@ function buildBstXml({ asn, carrier = 'DT', handoverLocation = 'TRIST', now = ne
     `<BpMessage MessageType="BST">\n` +
     `<Mode>30</Mode>\n` +
     `<Status>\n` +
-    `<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handover}</Date>\n` +
+    `${eventDates || `<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handover}</Date>`}\n` +
     `<Location LocTypeCd="EA">\n` +
     `<LocationID Qualifier="UN">${handoverLocation}</LocationID>\n` +
     `</Location>\n` +
@@ -71,10 +119,10 @@ function buildBstXml({ asn, carrier = 'DT', handoverLocation = 'TRIST', now = ne
  * Build BST XML and write it to outputDir.
  * Returns { fileName, filePath, xmlContent }.
  */
-function writeBstFile({ asn, carrier = 'DT', handoverLocation = 'TRIST', outputDir }) {
+function writeBstFile({ asn, carrier = 'DT', handoverLocation = 'TRIST', outputDir, dateEvents = {} }) {
   const now     = new Date();
   const profile = getCarrierProfile(carrier);
-  const xml     = buildBstXml({ asn, carrier, handoverLocation, now });
+  const xml     = buildBstXml({ asn, carrier, handoverLocation, now, dateEvents });
   const ts      = formatCtrl(now);
   const fileName = `${profile.filePrefix}_E2ASOS_BulkStatus_1.0_${ts}_${asn}.xml`;
   const dir     = path.resolve(outputDir || cfg.outputDir);
