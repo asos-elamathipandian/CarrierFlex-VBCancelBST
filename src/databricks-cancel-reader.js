@@ -138,8 +138,7 @@ async function fetchCancelDataByPoRefs(poRefs) {
            ON cb.dim_carrier_booking_sk = cbf.dim_carrier_booking_sk
     WHERE asn.asn_id IS NOT NULL
       AND (asn.asn_status_code IS NULL OR asn.asn_status_code != 'D')
-      AND lf.asnIsBooked = 1
-    -- deduplicate: one booking ref row per ASN (latest booking wins)
+    -- deduplicate: one row per ASN/SKU using the latest snapshot; booking state is no longer a gate
     QUALIFY ROW_NUMBER() OVER (
       PARTITION BY lf.asnId, lf.poId, lf.sku
       ORDER BY cbf.dim_supplier_booked_date_sk DESC NULLS LAST
@@ -156,7 +155,7 @@ async function fetchCancelDataByPoRefs(poRefs) {
   }
 
   if (!rows || rows.length === 0) {
-    const missing = safePOs.map(p => `No active booked ASN found for PO ${p}`);
+    const missing = safePOs.map(p => `No PO/ASN/SKU rows found for PO ${p}`);
     return { bookingRows: [], errors: missing };
   }
 

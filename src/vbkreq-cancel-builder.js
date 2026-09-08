@@ -74,6 +74,12 @@ function nowFilenameStr() {
   return nowStr().replace(' ', '');
 }
 
+function filenameSuffixFromCtrlNumber(ctrlNumber) {
+  const digits = String(ctrlNumber || '').replace(/\D+/g, '');
+  if (!digits) return '000000000';
+  return digits.slice(-9).padStart(9, '0');
+}
+
 function ensureStateDir() {
   fs.mkdirSync(cfg.stateDir, { recursive: true });
 }
@@ -143,7 +149,7 @@ function buildCancelXml(row, carrierSenderId = 'DAVIESTN') {
   const ctrlNumber = nextCtrlNumber();
   const bookingRef = resolveBookingRef(row);
   const version    = getBookingVersion(bookingRef);
-  const filename   = `${carrierSenderId}_E2ASOS_VBKREQ_1.0_${nowFilenameStr()}${ctrlNumber.replace('ASOSBOOK-', '')}.xml`;
+  const filename   = `${carrierSenderId}_E2ASOS_VBKREQ_1.0_${nowFilenameStr()}${filenameSuffixFromCtrlNumber(ctrlNumber)}.xml`;
 
   const root = create({ version: '1.0', encoding: 'UTF-8' })
     .ele('XMLBundle');
