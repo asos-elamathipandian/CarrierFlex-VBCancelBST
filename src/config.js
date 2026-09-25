@@ -34,6 +34,15 @@ module.exports = {
     clientSecret: optional('SP_CLIENT_SECRET'),
   },
 
+  outbound856: {
+    connectionString: optional('AZURE_BLOB_CONNECTION_STRING'),
+    containerSasUrl:  optional('AZURE_BLOB_CONTAINER_SAS_URL'),
+    containerName:    optional('AZURE_BLOB_CONTAINER', 'sftp-inbound'),
+    prefix:           optional('AZURE_BLOB_856_PREFIX', 'IN/'),
+    lookbackDays:     parseInt(optional('AZURE_BLOB_856_LOOKBACK_DAYS', '365'), 10),
+    maxBlobs:         parseInt(optional('AZURE_BLOB_856_MAX_BLOBS', '1000'), 10),
+  },
+
   sftpEnv: optional('SFTP_ENV', 'test').toLowerCase(),
 
   sftpE2open: {

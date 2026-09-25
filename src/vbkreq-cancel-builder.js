@@ -44,13 +44,11 @@ const MODE_MAP = {
   'ECO': '70',
 };
 
-const DEFAULT_VB_REF = 'VB-1000000206';
-
 function resolveBookingRef(row) {
-  const raw = row && (row.Booking_Ref || row.ASN_Ref || '');
+  const raw = row && row.Booking_Ref;
   const val = String(raw || '').trim();
-  if (val && val !== 'Unknown') return val;
-  return DEFAULT_VB_REF;
+  if (/^VB-\d+$/i.test(val)) return val.toUpperCase();
+  throw new Error('Missing valid VB booking reference from the outbound 856 ACE reference');
 }
 
 function resolveMode(val) {

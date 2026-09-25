@@ -19,6 +19,7 @@ const { fetchCancelDataByRefs } = require('./databricks-cancel-reader');
 const { buildCancelXml }         = require('./vbkreq-cancel-builder');
 const { uploadVbkreq }           = require('./sftp-e2open');
 const { getCarrierProfile }      = require('./carrier-profile');
+const { findLatestVbReferenceByAsn } = require('./outbound-856-reader');
 
 const LOG_FILE = path.join(cfg.stateDir, 'cancel-log.json');
 
@@ -78,6 +79,13 @@ async function processCancelEvent(input) {
 
   for (const row of bookingRows) {
     try {
+      const outbound856 = await findLatestVbReferenceByAsn({
+        asn: row.ASN_Ref,
+        ...cfg.outbound856,
+      });
+      row.Booking_Ref = outbound856.bookingRef;
+      console.log(`[VB Cancel] ASN ${row.ASN_Ref} resolved to ${row.Booking_Ref} from ${outbound856.blobName}`);
+
       const { xml, filename, bookingRef } = buildCancelXml(row, profile.vbkreqSenderId);
 
       const outPath = path.join(cfg.outputDir, filename);
@@ -93,6 +101,7 @@ async function processCancelEvent(input) {
         asnRefs,
         asnRef:     row.ASN_Ref,
         bookingRef,
+        outbound856Blob: outbound856.blobName,
         filename,
         remotePath,
         local,

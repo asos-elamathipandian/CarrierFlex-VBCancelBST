@@ -8,11 +8,13 @@
     "cancel-once": "node src/run-cancel-once.js",
     "bst-once": "node src/run-bst-once.js",
     "cancel": "node src/run-cancel-once.js",
-    "bst": "node src/run-bst-once.js"
+    "bst": "node src/run-bst-once.js",
+    "test": "node test/outbound-856-reader.test.js"
   },
   "dependencies": {
     "@azure/identity": "^4.13.1",
     "@azure/service-bus": "^7.9.0",
+    "@azure/storage-blob": "^12.34.0",
     "@databricks/sql": "^2.0.0",
     "csv-parse": "^5.5.6",
     "dotenv": "^17.0.0",

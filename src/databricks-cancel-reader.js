@@ -40,6 +40,61 @@ function resolveTransportMode(freightService) {
   return '30'; // road/truck default for UK/EU nominated carriers
 }
 
+function groupBookingRows(rows) {
+  const asnMap = {};
+
+  for (const row of rows) {
+    const asnKey = String(row.asn_id || row.asnId || '');
+    if (!asnMap[asnKey]) {
+      asnMap[asnKey] = {
+        ASN_Ref:                   asnKey,
+        PO_Number:                 String(row.poId || ''),
+        FC_ID:                     String(row.firstDestination || 'FC01'),
+        Supplier_Name:             row.supplierName || '',
+        Supplier_ID:               row.supplier_id || '',
+        Supplier_CountryCd:        row.supplierCountry || '',
+        Factory_ID:                row.factoryID || '',
+        Factory_Name:              row.factoryName || '',
+        Factory_CountryCd:         row.factory_country_code || '',
+        Loading_Port_LOCODE:       row.lading_port_code || '',
+        Mode_Of_Transport:         row.shippingMethod || '30',
+        Carrier_ID:                row.carrier_code || '3',
+        Ship_Date:                 toDateStr(row.poShipDate || row.expectedShipmentDate),
+        Expected_Delivery_Date:    toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
+        Booking_Qty:               0,
+        Header_Booking_Qty:        0,
+        No_of_Cartons:             0,
+        Unit_Weight_KG:            0,
+        Traffic_Mode:              'CFS',
+        Country_Of_Origin:         row.factory_country_code || 'XX',
+        Hazardous:                 null,
+        Collection_Type:           'Delivery',
+        Remarks:                   '',
+        Cargo_Ready_Planned_Collection_Date: '',
+        Carrier_Booking_Request_Date:        '',
+        ASN_Delivery_Date:         toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
+        Booking_Ref:               row.vbBookingRef || '',
+        _skuLines: [],
+      };
+    }
+
+    const entry = asnMap[asnKey];
+    entry.Booking_Qty += parseFloat(row.bookedQty || 0);
+    entry.Header_Booking_Qty += parseFloat(row.bookedQty || 0);
+    entry._skuLines.push({
+      sku:   String(row.sku || ''),
+      qty:   parseFloat(row.bookedQty || 0),
+      poId:  String(row.poId || ''),
+      asnId: asnKey,
+      fcId:  String(row.firstDestination || 'FC01'),
+    });
+  }
+
+  const bookingRows = Object.values(asnMap);
+  console.log(`[Databricks Cancel] grouped into ${bookingRows.length} ASN booking(s)`);
+  return { bookingRows, errors: [] };
+}
+
 /**
  * Fetch booking data from Databricks for the given PO reference numbers.
  *
@@ -159,65 +214,7 @@ async function fetchCancelDataByPoRefs(poRefs) {
     return { bookingRows: [], errors: missing };
   }
 
-  // Group rows by ASN so one VBKREQ is generated per ASN.
-  const asnMap = {};
-  for (const row of rows) {
-    const asnKey = String(row.asn_id || row.asnId || '');
-    if (!asnMap[asnKey]) {
-      asnMap[asnKey] = {
-        // vbkreq-builder field names
-        ASN_Ref:                   asnKey,
-        PO_Number:                 String(row.poId     || ''),
-        FC_ID:                     String(row.firstDestination || 'FC01'),
-        Supplier_Name:             row.supplierName    || '',
-        Supplier_ID:               row.supplier_id     || '',
-        Supplier_CountryCd:        row.supplierCountry || '',
-        Factory_ID:                row.factoryID       || '',
-        Factory_Name:              row.factoryName     || '',
-        Factory_CountryCd:         row.factory_country_code || '',
-        Loading_Port_LOCODE:       row.lading_port_code || '',
-        // shippingMethod is the E2open mode code (10/30/40) stored directly on the fact
-        Mode_Of_Transport:         row.shippingMethod  || '30',
-        Carrier_ID:                row.carrier_code    || '3',
-        Ship_Date:                 toDateStr(row.poShipDate || row.expectedShipmentDate),
-        Expected_Delivery_Date:    toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
-        // Booking quantities (aggregate over lines below)
-        Booking_Qty:               0,
-        Header_Booking_Qty:        0,
-        No_of_Cartons:             0,
-        Unit_Weight_KG:            0,
-        // Cancellation-specific defaults
-        Traffic_Mode:              'CFS',
-        Country_Of_Origin:         row.factory_country_code || 'XX',
-        Hazardous:                 null,
-        Collection_Type:           'Delivery',
-        Remarks:                   '',
-        Cargo_Ready_Planned_Collection_Date: '',
-        Carrier_Booking_Request_Date:        '',
-        ASN_Delivery_Date:         toDateStr(row.poDeliveryDate || row.expectedDeliveryDate),
-        // Use the accepted default VB booking ref when no valid ref is available.
-        Booking_Ref: (row.vbBookingRef && row.vbBookingRef !== 'Unknown')
-                       ? row.vbBookingRef
-                       : 'VB-1000000206',
-        _skuLines: [],
-      };
-    }
-    const entry = asnMap[asnKey];
-    entry.Booking_Qty        += parseFloat(row.bookedQty || 0);
-    entry.Header_Booking_Qty += parseFloat(row.bookedQty || 0);
-    entry._skuLines.push({
-      sku:    String(row.sku       || ''),
-      qty:    parseFloat(row.bookedQty || 0),
-      poId:   String(row.poId     || ''),
-      asnId:  asnKey,
-      fcId:   String(row.firstDestination || 'FC01'),
-    });
-  }
-
-  const bookingRows = Object.values(asnMap);
-  console.log(`[Databricks Cancel] grouped into ${bookingRows.length} ASN booking(s)`);
-
-  return { bookingRows, errors: [] };
+  return groupBookingRows(rows);
 }
 
 async function fetchCancelDataByAsnRefs(asnRefs) {
