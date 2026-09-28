@@ -86,32 +86,41 @@ async function findLatestVbReferenceByAsn({
   const containerClient = containerSasUrl
     ? new ContainerClient(containerSasUrl)
     : BlobServiceClient.fromConnectionString(connectionString).getContainerClient(containerName);
-  const blobs = [];
+  let scanned = 0;
 
   for (const datePrefix of datePrefixes(prefix, Math.max(0, lookbackDays))) {
+    const blobs = [];
     for await (const blob of containerClient.listBlobsFlat({ prefix: datePrefix })) {
       if (/\.xml$/i.test(blob.name)) blobs.push(blob);
     }
-  }
 
-  const latestFirst = blobs
-    .sort((left, right) => (right.properties.lastModified || 0) - (left.properties.lastModified || 0))
-    .slice(0, Math.max(1, maxBlobs));
+    const latestFirst = blobs.sort(
+      (left, right) => (right.properties.lastModified || 0) - (left.properties.lastModified || 0)
+    );
 
-  for (const blob of latestFirst) {
-    const download = await containerClient.getBlobClient(blob.name).download(0);
-    const xml = await streamToString(download.readableStreamBody);
-    const bookingRef = extractVbReference(xml, normalizedAsn);
-    if (bookingRef) {
-      return {
-        bookingRef,
-        blobName: blob.name,
-        lastModified: blob.properties.lastModified,
-      };
+    for (let index = 0; index < latestFirst.length && scanned < Math.max(1, maxBlobs); index += 10) {
+      const batch = latestFirst.slice(index, index + 10);
+      scanned += batch.length;
+      const matches = await Promise.all(batch.map(async blob => {
+        try {
+          const download = await containerClient.getBlobClient(blob.name).download(0);
+          const xml = await streamToString(download.readableStreamBody);
+          const bookingRef = extractVbReference(xml, normalizedAsn);
+          return bookingRef ? { bookingRef, blobName: blob.name, lastModified: blob.properties.lastModified } : null;
+        } catch (error) {
+          console.warn(`[Outbound 856] Could not read ${blob.name}: ${error.message}`);
+          return null;
+        }
+      }));
+
+      const match = matches.find(Boolean);
+      if (match) return match;
     }
+
+    if (scanned >= Math.max(1, maxBlobs)) break;
   }
 
-  throw new Error(`No 856 ACE VB reference found for ASN ${normalizedAsn} in the latest ${latestFirst.length} blob(s)`);
+  throw new Error(`No 856 ACE VB reference found for ASN ${normalizedAsn} in the latest ${scanned} blob(s)`);
 }
 
 module.exports = { extractVbReference, findLatestVbReferenceByAsn };
