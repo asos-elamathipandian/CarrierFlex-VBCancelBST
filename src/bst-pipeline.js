@@ -88,6 +88,7 @@ async function processFile(localPath, fileName) {
         timestamp:  new Date().toISOString(),
         sourceFile: fileName,
         asn:        row.asn,
+        poRefs:     row.poRefs || [],
         carrier:    row.carrier || cfg.carrier,
         xmlName,
         remotePath,
@@ -99,6 +100,14 @@ async function processFile(localPath, fileName) {
       const msg = `ASN ${row.asn}: ${err.message}`;
       console.error(`[BST] ${msg}`);
       errors.push(msg);
+      appendLog({
+        timestamp: new Date().toISOString(),
+        sourceFile: fileName,
+        asn: row.asn,
+        poRefs: row.poRefs || [],
+        carrier: row.carrier || cfg.carrier,
+        errors: [msg],
+      });
     }
   }
 

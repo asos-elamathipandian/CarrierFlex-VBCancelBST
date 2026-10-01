@@ -24,6 +24,7 @@ const cfg       = require('./config');
 
 // Column name aliases (lower-cased header → canonical field)
 const ASN_ALIASES = ['asn', 'asn_number', 'asnnumber', 'shipmentref', 'shipment_id', 'shipmentid', 'shipment_ref'];
+const PO_ALIASES = ['po', 'po_ref', 'po_number', 'po_num', 'purchase_order', 'purchase_order_number', 'purchaseorder'];
 const CARRIER_ALIASES = ['carrier', 'carrier_code', 'carriercode'];
 const LOCATION_ALIASES = ['handoverlocation', 'handover_location', 'locode', 'location'];
 
@@ -69,6 +70,11 @@ function pick(row, aliases) {
   return null;
 }
 
+function pickReferences(row, aliases) {
+  const value = pick(row, aliases);
+  return value ? value.split(/[,;|]/).map(ref => ref.trim()).filter(Boolean) : [];
+}
+
 function pickDateEvent(row) {
   const out = {};
   for (const [code, aliases] of Object.entries(BST_DATE_ALIASES)) {
@@ -87,11 +93,12 @@ function normaliseRow(rawRow) {
 
   const asnRaw          = pick(row, ASN_ALIASES);
   const asn             = asnRaw ? normaliseAsn(asnRaw) : null;
+  const poRefs          = pickReferences(row, PO_ALIASES);
   const carrier         = pick(row, CARRIER_ALIASES) || cfg.carrier;
   const handoverLocation = pick(row, LOCATION_ALIASES) || 'TRIST';
   const dateEvents      = pickDateEvent(row);
 
-  return asn ? { asn, carrier, handoverLocation, dateEvents } : null;
+  return asn ? { asn, poRefs, carrier, handoverLocation, dateEvents } : null;
 }
 
 /** Parse a CSV file and return normalised rows. */

@@ -41,6 +41,52 @@ function extractVbReference(xml, asn) {
   return '';
 }
 
+function extractOtherAsnsForVbReference(xml, bookingRef, excludedAsn) {
+  const messagePattern = /<BpMessage\b([^>]*)>([\s\S]*?)<\/BpMessage>/gi;
+  const otherAsns = new Set();
+  let messageMatch;
+
+  while ((messageMatch = messagePattern.exec(String(xml || '')))) {
+    const message = messageMatch[2];
+    if (attributeValue(messageMatch[1], 'MessageType') !== '856') continue;
+
+    const referencePattern = /<Reference\b([^>]*)>([\s\S]*?)<\/Reference>/gi;
+    let hasBookingRef = false;
+    let referenceMatch;
+    while ((referenceMatch = referencePattern.exec(message))) {
+      if (
+        attributeValue(referenceMatch[1], 'RefTypeCd') === 'ACE' &&
+        attributeValue(referenceMatch[1], 'SourceRefTypeCd') === '128' &&
+        decodeXml(referenceMatch[2]).trim().toUpperCase() === String(bookingRef).toUpperCase()
+      ) {
+        hasBookingRef = true;
+        break;
+      }
+    }
+    if (!hasBookingRef) continue;
+
+    const documentPattern = /<Document\b([^>]*)>([\s\S]*?)<\/Document>/gi;
+    let documentMatch;
+    const messageAsns = new Set();
+    while ((documentMatch = documentPattern.exec(message))) {
+      if (attributeValue(documentMatch[1], 'DocType').toUpperCase() !== 'SHIP') continue;
+
+      const key = attributeValue(documentMatch[1], 'Key');
+      const idMatch = documentMatch[2].match(/<DocumentID\b[^>]*>([\s\S]*?)<\/DocumentID>/i);
+      const documentId = idMatch ? decodeXml(idMatch[1]).trim() : '';
+      if (key) messageAsns.add(key);
+      if (documentId) messageAsns.add(documentId);
+    }
+
+    if ([...messageAsns].some(asn => asn === String(excludedAsn))) continue;
+    for (const asn of messageAsns) {
+      if (asn && asn !== String(excludedAsn)) otherAsns.add(asn);
+    }
+  }
+
+  return [...otherAsns];
+}
+
 function datePrefixes(prefix, lookbackDays) {
   const normalizedPrefix = prefix ? `${prefix.replace(/\/?$/, '/')}` : '';
   const prefixes = [];
@@ -62,6 +108,43 @@ async function streamToString(readableStream) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks).toString('utf8');
+}
+
+async function findSameDayOtherAsnMessages({
+  containerClient,
+  datePrefix,
+  bookingRef,
+  excludedAsn,
+  maxBlobs,
+}) {
+  const blobs = [];
+  for await (const blob of containerClient.listBlobsFlat({ prefix: datePrefix })) {
+    if (/\.xml$/i.test(blob.name)) blobs.push(blob);
+  }
+
+  const latestFirst = blobs.sort(
+    (left, right) => (right.properties.lastModified || 0) - (left.properties.lastModified || 0)
+  );
+  const matches = [];
+  const limit = Math.max(1, maxBlobs);
+
+  for (let index = 0; index < latestFirst.length && index < limit; index += 10) {
+    const batch = latestFirst.slice(index, Math.min(index + 10, limit));
+    const results = await Promise.all(batch.map(async blob => {
+      try {
+        const download = await containerClient.getBlobClient(blob.name).download(0);
+        const xml = await streamToString(download.readableStreamBody);
+        const asns = extractOtherAsnsForVbReference(xml, bookingRef, excludedAsn);
+        return asns.length ? { blobName: blob.name, asns, lastModified: blob.properties.lastModified } : null;
+      } catch (error) {
+        console.warn(`[Outbound 856] Could not read ${blob.name}: ${error.message}`);
+        return null;
+      }
+    }));
+    matches.push(...results.filter(Boolean));
+  }
+
+  return matches;
 }
 
 async function findLatestVbReferenceByAsn({
@@ -114,7 +197,16 @@ async function findLatestVbReferenceByAsn({
       }));
 
       const match = matches.find(Boolean);
-      if (match) return match;
+      if (match) {
+        const sameDayOtherAsns = await findSameDayOtherAsnMessages({
+          containerClient,
+          datePrefix,
+          bookingRef: match.bookingRef,
+          excludedAsn: normalizedAsn,
+          maxBlobs,
+        });
+        return { ...match, sameDayOtherAsns };
+      }
     }
 
     if (scanned >= Math.max(1, maxBlobs)) break;
@@ -123,4 +215,8 @@ async function findLatestVbReferenceByAsn({
   throw new Error(`No 856 ACE VB reference found for ASN ${normalizedAsn} in the latest ${scanned} blob(s)`);
 }
 
-module.exports = { extractVbReference, findLatestVbReferenceByAsn };
+module.exports = {
+  extractVbReference,
+  extractOtherAsnsForVbReference,
+  findLatestVbReferenceByAsn,
+};

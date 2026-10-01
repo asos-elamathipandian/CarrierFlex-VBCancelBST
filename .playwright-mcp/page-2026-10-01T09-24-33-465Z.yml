@@ -1,0 +1,453 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [aria-hidden] [ref=e4]: CF
+      - generic [ref=e5]:
+        - paragraph [ref=e6]: CarrierFlex
+        - generic [ref=e7]: Message operations
+    - generic [ref=e8]: Log monitor
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Activity / outbound
+        - heading "Message activity" [level=1] [ref=e15]
+      - paragraph [ref=e16]: Cancellation status reflects the VBKREQ submission recorded by this service. E2open processing acknowledgments are not included in these logs.
+    - region "Log summary" [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]: Visible events
+        - generic [ref=e20]: "33"
+      - generic [ref=e21]:
+        - generic [ref=e22]: Submitted
+        - generic [ref=e23]: "25"
+      - generic [ref=e24]:
+        - generic [ref=e25]: Skipped
+        - generic [ref=e26]: "0"
+      - generic [ref=e27]:
+        - generic [ref=e28]: Failed
+        - generic [ref=e29]: "8"
+    - region "Message log entries" [ref=e30]:
+      - generic [ref=e31]:
+        - searchbox "Search log entries" [ref=e32]
+        - combobox "Filter by flow" [ref=e33]:
+          - option "All flows" [selected]
+          - option "VB cancellation"
+          - option "Bulk status"
+        - combobox "Filter by result" [ref=e34]:
+          - option "All results" [selected]
+          - option "Submitted"
+          - option "Skipped"
+          - option "Failed"
+          - option "Saved locally"
+          - option "No output"
+        - button "Refresh logs" [ref=e35] [cursor=pointer]: Refresh
+        - generic [ref=e39]: Updated 10:24:33
+      - table [ref=e41]:
+        - rowgroup [ref=e42]:
+          - row [ref=e43]:
+            - columnheader "Time" [ref=e44]
+            - columnheader "Flow" [ref=e45]
+            - columnheader "ASN / request" [ref=e46]
+            - columnheader "VB reference" [ref=e47]
+            - columnheader "Result" [ref=e48]
+            - columnheader "Details / artifact" [ref=e49]
+        - rowgroup [ref=e50]:
+          - row [ref=e51]:
+            - cell "28/09/2026 14:07:06" [ref=e52]
+            - cell "VB cancellation Outbound" [ref=e53]:
+              - text: VB cancellation
+              - generic [ref=e54]: Outbound
+            - 'cell "— Request: 56670000146831, 56670000146849" [ref=e55]':
+              - text: —
+              - generic [ref=e56]: "Request: 56670000146831, 56670000146849"
+            - cell "—" [ref=e57]
+            - cell "Failed" [ref=e58]
+            - 'cell "No active bookings found for ASN(s): 56670000146831, 56670000146849 | No active booked ASN found for ASN 56670000146831 | No active booked ASN found for ASN 56670000146849" [ref=e60]'
+          - row [ref=e61]:
+            - cell "28/09/2026 13:24:48" [ref=e62]
+            - cell "VB cancellation Outbound" [ref=e63]:
+              - text: VB cancellation
+              - generic [ref=e64]: Outbound
+            - 'cell "57252203195500 PO: 56670000146831, 57252203195500, 56670000146849" [ref=e65]':
+              - text: "57252203195500"
+              - generic [ref=e66]: "PO: 56670000146831, 57252203195500, 56670000146849"
+            - cell "VB-1000010026" [ref=e67]
+            - cell "Submitted" [ref=e68]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260928132443400000021.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260928132443400000021.xml" [ref=e70]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260928132443400000021.xml
+              - generic [ref=e71]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260928132443400000021.xml
+          - row [ref=e72]:
+            - cell "08/09/2026 12:07:56" [ref=e73]
+            - cell "VB cancellation Outbound" [ref=e74]:
+              - text: VB cancellation
+              - generic [ref=e75]: Outbound
+            - 'cell "43352203197553 PO: 500036610301" [ref=e76]':
+              - text: "43352203197553"
+              - generic [ref=e77]: "PO: 500036610301"
+            - cell "VB-1000000206" [ref=e78]
+            - cell "Submitted" [ref=e79]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260908120751400000017.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260908120751400000017.xml" [ref=e81]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260908120751400000017.xml
+              - generic [ref=e82]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260908120751400000017.xml
+          - row [ref=e83]:
+            - cell "08/09/2026 11:55:38" [ref=e84]
+            - cell "VB cancellation Outbound" [ref=e85]:
+              - text: VB cancellation
+              - generic [ref=e86]: Outbound
+            - 'cell "43352203197553 PO: 500036610301" [ref=e87]':
+              - text: "43352203197553"
+              - generic [ref=e88]: "PO: 500036610301"
+            - cell "VB-1000000206" [ref=e89]
+            - cell "Submitted" [ref=e90]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260908115533ASOSCXL-400000015.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260908115533ASOSCXL-400000015.xml" [ref=e92]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260908115533ASOSCXL-400000015.xml
+              - generic [ref=e93]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260908115533ASOSCXL-400000015.xml
+          - row [ref=e94]:
+            - cell "08/09/2026 11:46:29" [ref=e95]
+            - cell "VB cancellation Outbound" [ref=e96]:
+              - text: VB cancellation
+              - generic [ref=e97]: Outbound
+            - 'cell "— Request: 500036610301" [ref=e98]':
+              - text: —
+              - generic [ref=e99]: "Request: 500036610301"
+            - cell "—" [ref=e100]
+            - cell "Failed" [ref=e101]
+            - 'cell "No active bookings found for PO(s): 500036610301 | No active booked ASN found for PO 500036610301" [ref=e103]'
+          - row [ref=e104]:
+            - cell "07/09/2026 15:59:41" [ref=e105]
+            - cell "Bulk status Outbound" [ref=e106]:
+              - text: Bulk status
+              - generic [ref=e107]: Outbound
+            - cell "49152203183408" [ref=e108]
+            - cell "—" [ref=e109]
+            - cell "Submitted" [ref=e110]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145934_49152203183408.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145934_49152203183408.xml" [ref=e112]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145934_49152203183408.xml
+              - generic [ref=e113]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145934_49152203183408.xml
+          - row [ref=e114]:
+            - cell "07/09/2026 15:58:26" [ref=e115]
+            - cell "Bulk status Outbound" [ref=e116]:
+              - text: Bulk status
+              - generic [ref=e117]: Outbound
+            - cell "49152203183408" [ref=e118]
+            - cell "—" [ref=e119]
+            - cell "Submitted" [ref=e120]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145818_49152203183408.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145818_49152203183408.xml" [ref=e122]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145818_49152203183408.xml
+              - generic [ref=e123]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145818_49152203183408.xml
+          - row [ref=e124]:
+            - cell "07/09/2026 15:55:09" [ref=e125]
+            - cell "Bulk status Outbound" [ref=e126]:
+              - text: Bulk status
+              - generic [ref=e127]: Outbound
+            - cell "49152203183408" [ref=e128]
+            - cell "—" [ref=e129]
+            - cell "Submitted" [ref=e130]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145504_49152203183408.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145504_49152203183408.xml" [ref=e132]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145504_49152203183408.xml
+              - generic [ref=e133]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907145504_49152203183408.xml
+          - row [ref=e134]:
+            - cell "07/09/2026 15:46:40" [ref=e135]
+            - cell "Bulk status Outbound" [ref=e136]:
+              - text: Bulk status
+              - generic [ref=e137]: Outbound
+            - cell "49152203183408" [ref=e138]
+            - cell "—" [ref=e139]
+            - cell "Submitted" [ref=e140]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144635_49152203183408.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144635_49152203183408.xml" [ref=e142]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144635_49152203183408.xml
+              - generic [ref=e143]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144635_49152203183408.xml
+          - row [ref=e144]:
+            - cell "07/09/2026 15:45:18" [ref=e145]
+            - cell "Bulk status Outbound" [ref=e146]:
+              - text: Bulk status
+              - generic [ref=e147]: Outbound
+            - cell "49152203183408" [ref=e148]
+            - cell "—" [ref=e149]
+            - cell "Submitted" [ref=e150]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144513_49152203183408.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144513_49152203183408.xml" [ref=e152]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144513_49152203183408.xml
+              - generic [ref=e153]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907144513_49152203183408.xml
+          - row [ref=e154]:
+            - cell "07/09/2026 15:06:48" [ref=e155]
+            - cell "Bulk status Outbound" [ref=e156]:
+              - text: Bulk status
+              - generic [ref=e157]: Outbound
+            - cell "4.92E+13" [ref=e158]
+            - cell "—" [ref=e159]
+            - cell "Submitted" [ref=e160]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907140643_4.92E+13.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260907140643_4.92E+13.xml" [ref=e162]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260907140643_4.92E+13.xml
+              - generic [ref=e163]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260907140643_4.92E+13.xml
+          - row [ref=e164]:
+            - cell "07/09/2026 14:25:24" [ref=e165]
+            - cell "VB cancellation Outbound" [ref=e166]:
+              - text: VB cancellation
+              - generic [ref=e167]: Outbound
+            - 'cell "47652203188992 PO: 500037024111" [ref=e168]':
+              - text: "47652203188992"
+              - generic [ref=e169]: "PO: 500037024111"
+            - cell "VB-1000000206" [ref=e170]
+            - cell "Submitted" [ref=e171]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260907142517ASOSCXL-400000014.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260907142517ASOSCXL-400000014.xml" [ref=e173]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260907142517ASOSCXL-400000014.xml
+              - generic [ref=e174]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260907142517ASOSCXL-400000014.xml
+          - row [ref=e175]:
+            - cell "07/09/2026 14:18:36" [ref=e176]
+            - cell "VB cancellation Outbound" [ref=e177]:
+              - text: VB cancellation
+              - generic [ref=e178]: Outbound
+            - 'cell "— Request: 49870000005277" [ref=e179]':
+              - text: —
+              - generic [ref=e180]: "Request: 49870000005277"
+            - cell "—" [ref=e181]
+            - cell "Failed" [ref=e182]
+            - 'cell "No active bookings found for ASN(s): 49870000005277 | No active booked ASN found for ASN 49870000005277" [ref=e184]'
+          - row [ref=e185]:
+            - cell "07/09/2026 14:09:17" [ref=e186]
+            - cell "VB cancellation Outbound" [ref=e187]:
+              - text: VB cancellation
+              - generic [ref=e188]: Outbound
+            - 'cell "— Request: 49870000005277" [ref=e189]':
+              - text: —
+              - generic [ref=e190]: "Request: 49870000005277"
+            - cell "—" [ref=e191]
+            - cell "Failed" [ref=e192]
+            - 'cell "No active bookings found for PO(s): 49870000005277 | No active booked ASN found for PO 49870000005277" [ref=e194]'
+          - row [ref=e195]:
+            - cell "02/09/2026 10:59:55" [ref=e196]
+            - cell "VB cancellation Outbound" [ref=e197]:
+              - text: VB cancellation
+              - generic [ref=e198]: Outbound
+            - 'cell "47652203188992 PO: 500037024111" [ref=e199]':
+              - text: "47652203188992"
+              - generic [ref=e200]: "PO: 500037024111"
+            - cell "47652203188992" [ref=e201]
+            - cell "Submitted" [ref=e202]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260902105950ASOSCXL-400000012.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260902105950ASOSCXL-400000012.xml" [ref=e204]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260902105950ASOSCXL-400000012.xml
+              - generic [ref=e205]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260902105950ASOSCXL-400000012.xml
+          - row [ref=e206]:
+            - cell "02/09/2026 10:26:22" [ref=e207]
+            - cell "Bulk status Outbound" [ref=e208]:
+              - text: Bulk status
+              - generic [ref=e209]: Outbound
+            - cell "50370000076284" [ref=e210]
+            - cell "—" [ref=e211]
+            - cell "Submitted" [ref=e212]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260902092616_50370000076284.xml DAVIESTN_E2ASOS_BulkStatus_1.0_20260902092616_50370000076284.xml" [ref=e214]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_BulkStatus_1.0_20260902092616_50370000076284.xml
+              - generic [ref=e215]: DAVIESTN_E2ASOS_BulkStatus_1.0_20260902092616_50370000076284.xml
+          - row [ref=e216]:
+            - cell "02/09/2026 10:24:23" [ref=e217]
+            - cell "VB cancellation Outbound" [ref=e218]:
+              - text: VB cancellation
+              - generic [ref=e219]: Outbound
+            - 'cell "— Request: 500037263822" [ref=e220]':
+              - text: —
+              - generic [ref=e221]: "Request: 500037263822"
+            - cell "—" [ref=e222]
+            - cell "Failed" [ref=e223]
+            - 'cell "No active bookings found for PO(s): 500037263822 | No active booked ASN found for PO 500037263822" [ref=e225]'
+          - row [ref=e226]:
+            - cell "01/09/2026 15:55:51" [ref=e227]
+            - cell "VB cancellation Outbound" [ref=e228]:
+              - text: VB cancellation
+              - generic [ref=e229]: Outbound
+            - 'cell "57252203140391 PO: 500035508792" [ref=e230]':
+              - text: "57252203140391"
+              - generic [ref=e231]: "PO: 500035508792"
+            - cell "57252203140391" [ref=e232]
+            - cell "Submitted" [ref=e233]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901155547ASOSCXL-400000011.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901155547ASOSCXL-400000011.xml" [ref=e235]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901155547ASOSCXL-400000011.xml
+              - generic [ref=e236]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901155547ASOSCXL-400000011.xml
+          - row [ref=e237]:
+            - cell "01/09/2026 15:47:53" [ref=e238]
+            - cell "VB cancellation Outbound" [ref=e239]:
+              - text: VB cancellation
+              - generic [ref=e240]: Outbound
+            - 'cell "57252203169717 PO: 500035508792" [ref=e241]':
+              - text: "57252203169717"
+              - generic [ref=e242]: "PO: 500035508792"
+            - cell "57252203169717" [ref=e243]
+            - cell "Submitted" [ref=e244]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154748ASOSCXL-400000010.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154748ASOSCXL-400000010.xml" [ref=e246]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154748ASOSCXL-400000010.xml
+              - generic [ref=e247]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154748ASOSCXL-400000010.xml
+          - row [ref=e248]:
+            - cell "01/09/2026 15:47:48" [ref=e249]
+            - cell "VB cancellation Outbound" [ref=e250]:
+              - text: VB cancellation
+              - generic [ref=e251]: Outbound
+            - 'cell "57252203140391 PO: 500035508792" [ref=e252]':
+              - text: "57252203140391"
+              - generic [ref=e253]: "PO: 500035508792"
+            - cell "57252203140391" [ref=e254]
+            - cell "Submitted" [ref=e255]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154743ASOSCXL-400000009.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154743ASOSCXL-400000009.xml" [ref=e257]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154743ASOSCXL-400000009.xml
+              - generic [ref=e258]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901154743ASOSCXL-400000009.xml
+          - row [ref=e259]:
+            - cell "01/09/2026 15:29:26" [ref=e260]
+            - cell "VB cancellation Outbound" [ref=e261]:
+              - text: VB cancellation
+              - generic [ref=e262]: Outbound
+            - 'cell "40470000095789 PO: 500037362288" [ref=e263]':
+              - text: "40470000095789"
+              - generic [ref=e264]: "PO: 500037362288"
+            - cell "40470000095789" [ref=e265]
+            - cell "Submitted" [ref=e266]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901152917ASOSCXL-400000008.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901152917ASOSCXL-400000008.xml" [ref=e268]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901152917ASOSCXL-400000008.xml
+              - generic [ref=e269]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901152917ASOSCXL-400000008.xml
+          - row [ref=e270]:
+            - cell "01/09/2026 15:26:28" [ref=e271]
+            - cell "VB cancellation Outbound" [ref=e272]:
+              - text: VB cancellation
+              - generic [ref=e273]: Outbound
+            - 'cell "— Request: 500037362288" [ref=e274]':
+              - text: —
+              - generic [ref=e275]: "Request: 500037362288"
+            - cell "—" [ref=e276]
+            - cell "Failed" [ref=e277]
+            - 'cell "No active bookings found for PO(s): 500037362288 | No active booked ASN found for PO 500037362288" [ref=e279]'
+          - row [ref=e280]:
+            - cell "01/09/2026 15:19:21" [ref=e281]
+            - cell "VB cancellation Outbound" [ref=e282]:
+              - text: VB cancellation
+              - generic [ref=e283]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e284]':
+              - text: "48570000125757"
+              - generic [ref=e285]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e286]
+            - cell "Submitted" [ref=e287]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901151916ASOSCXL-400000007.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901151916ASOSCXL-400000007.xml" [ref=e289]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901151916ASOSCXL-400000007.xml
+              - generic [ref=e290]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901151916ASOSCXL-400000007.xml
+          - row [ref=e291]:
+            - cell "01/09/2026 15:18:25" [ref=e292]
+            - cell "VB cancellation Outbound" [ref=e293]:
+              - text: VB cancellation
+              - generic [ref=e294]: Outbound
+            - 'cell "— Request: 500037845717" [ref=e295]':
+              - text: —
+              - generic [ref=e296]: "Request: 500037845717"
+            - cell "—" [ref=e297]
+            - cell "Failed" [ref=e298]
+            - 'cell "No active bookings found for PO(s): 500037845717 | Databricks query failed: [TABLE_OR_VIEW_NOT_FOUND] The table or view `supplychain`.`serve`.`dim_purchase_order_v1` cannot be found. Verify the spelling and correctness of the schema and catalog. Search path: [`system`.`session`, `system`.`builtin`, `system`.`ai`, `sourcingandbuying`.`serve`]. If you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog. To tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 60 pos 14" [ref=e300]'
+          - row [ref=e301]:
+            - cell "01/09/2026 15:06:27" [ref=e302]
+            - cell "VB cancellation Outbound" [ref=e303]:
+              - text: VB cancellation
+              - generic [ref=e304]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e305]':
+              - text: "48570000125757"
+              - generic [ref=e306]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e307]
+            - cell "Submitted" [ref=e308]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901150622ASOSCXL-400000006.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901150622ASOSCXL-400000006.xml" [ref=e310]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901150622ASOSCXL-400000006.xml
+              - generic [ref=e311]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901150622ASOSCXL-400000006.xml
+          - row [ref=e312]:
+            - cell "01/09/2026 14:56:38" [ref=e313]
+            - cell "VB cancellation Outbound" [ref=e314]:
+              - text: VB cancellation
+              - generic [ref=e315]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e316]':
+              - text: "48570000125757"
+              - generic [ref=e317]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e318]
+            - cell "Submitted" [ref=e319]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145633ASOSCXL-400000005.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145633ASOSCXL-400000005.xml" [ref=e321]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145633ASOSCXL-400000005.xml
+              - generic [ref=e322]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145633ASOSCXL-400000005.xml
+          - row [ref=e323]:
+            - cell "01/09/2026 14:53:54" [ref=e324]
+            - cell "VB cancellation Outbound" [ref=e325]:
+              - text: VB cancellation
+              - generic [ref=e326]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e327]':
+              - text: "48570000125757"
+              - generic [ref=e328]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e329]
+            - cell "Submitted" [ref=e330]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145349ASOSCXL-400000004.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145349ASOSCXL-400000004.xml" [ref=e332]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145349ASOSCXL-400000004.xml
+              - generic [ref=e333]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901145349ASOSCXL-400000004.xml
+          - row [ref=e334]:
+            - cell "01/09/2026 14:39:36" [ref=e335]
+            - cell "VB cancellation Outbound" [ref=e336]:
+              - text: VB cancellation
+              - generic [ref=e337]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e338]':
+              - text: "48570000125757"
+              - generic [ref=e339]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e340]
+            - cell "Submitted" [ref=e341]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143931ASOSCXL-400000003.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143931ASOSCXL-400000003.xml" [ref=e343]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143931ASOSCXL-400000003.xml
+              - generic [ref=e344]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143931ASOSCXL-400000003.xml
+          - row [ref=e345]:
+            - cell "01/09/2026 14:31:39" [ref=e346]
+            - cell "VB cancellation Outbound" [ref=e347]:
+              - text: VB cancellation
+              - generic [ref=e348]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e349]':
+              - text: "48570000125757"
+              - generic [ref=e350]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e351]
+            - cell "Submitted" [ref=e352]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143133ASOSCXL-400000002.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143133ASOSCXL-400000002.xml" [ref=e354]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143133ASOSCXL-400000002.xml
+              - generic [ref=e355]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901143133ASOSCXL-400000002.xml
+          - row [ref=e356]:
+            - cell "01/09/2026 14:23:23" [ref=e357]
+            - cell "VB cancellation Outbound" [ref=e358]:
+              - text: VB cancellation
+              - generic [ref=e359]: Outbound
+            - 'cell "48570000125757 PO: 500037845717" [ref=e360]':
+              - text: "48570000125757"
+              - generic [ref=e361]: "PO: 500037845717"
+            - cell "48570000125757" [ref=e362]
+            - cell "Submitted" [ref=e363]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901142318ASOSCXL-400000001.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901142318ASOSCXL-400000001.xml" [ref=e365]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901142318ASOSCXL-400000001.xml
+              - generic [ref=e366]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901142318ASOSCXL-400000001.xml
+          - row [ref=e367]:
+            - cell "01/09/2026 14:15:23" [ref=e368]
+            - cell "VB cancellation Outbound" [ref=e369]:
+              - text: VB cancellation
+              - generic [ref=e370]: Outbound
+            - 'cell "57252202909912 PO: 500034238449, 500034182185" [ref=e371]':
+              - text: "57252202909912"
+              - generic [ref=e372]: "PO: 500034238449, 500034182185"
+            - cell "57252202909912" [ref=e373]
+            - cell "Submitted" [ref=e374]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141518200000002.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141518200000002.xml" [ref=e376]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141518200000002.xml
+              - generic [ref=e377]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141518200000002.xml
+          - row [ref=e378]:
+            - cell "01/09/2026 14:15:18" [ref=e379]
+            - cell "VB cancellation Outbound" [ref=e380]:
+              - text: VB cancellation
+              - generic [ref=e381]: Outbound
+            - 'cell "57252202909911 PO: 500034238449, 500034182185" [ref=e382]':
+              - text: "57252202909911"
+              - generic [ref=e383]: "PO: 500034238449, 500034182185"
+            - cell "57252202909911" [ref=e384]
+            - cell "Submitted" [ref=e385]
+            - cell "/e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141513200000001.xml DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141513200000001.xml" [ref=e387]:
+              - text: /e2open/b2b/scpusers2/e2net/E2NETSTG/e2c0000e9a-3358ade21b-0/in/DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141513200000001.xml
+              - generic [ref=e388]: DAVIESTN_E2ASOS_VBKREQ_1.0_20260901141513200000001.xml
+          - row [ref=e389]:
+            - cell "01/09/2026 14:13:51" [ref=e390]
+            - cell "VB cancellation Outbound" [ref=e391]:
+              - text: VB cancellation
+              - generic [ref=e392]: Outbound
+            - 'cell "— Request: 500034238449, 500034182185" [ref=e393]':
+              - text: —
+              - generic [ref=e394]: "Request: 500034238449, 500034182185"
+            - cell "—" [ref=e395]
+            - cell "Failed" [ref=e396]
+            - 'cell "No active bookings found for PO(s): 500034238449, 500034182185 | Databricks query failed: Received a response with a bad HTTP status code: 403" [ref=e398]'
+      - paragraph [ref=e399]: Submitted means the configured SFTP upload completed. Locally saved output is not an SFTP submission.

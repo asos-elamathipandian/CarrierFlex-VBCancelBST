@@ -49,6 +49,7 @@ function groupBookingRows(rows) {
       asnMap[asnKey] = {
         ASN_Ref:                   asnKey,
         PO_Number:                 String(row.poId || ''),
+        PO_Refs:                   [],
         FC_ID:                     String(row.firstDestination || 'FC01'),
         Supplier_Name:             row.supplierName || '',
         Supplier_ID:               row.supplier_id || '',
@@ -79,6 +80,8 @@ function groupBookingRows(rows) {
     }
 
     const entry = asnMap[asnKey];
+  const poRef = String(row.poId || '');
+  if (poRef && !entry.PO_Refs.includes(poRef)) entry.PO_Refs.push(poRef);
     entry.Booking_Qty += parseFloat(row.bookedQty || 0);
     entry.Header_Booking_Qty += parseFloat(row.bookedQty || 0);
     entry._skuLines.push({
@@ -337,4 +340,4 @@ async function fetchCancelDataByRefs({ poRefs, asnRefs } = {}) {
   return fetchCancelDataByPoRefs(poRefs || []);
 }
 
-module.exports = { fetchCancelDataByPoRefs, fetchCancelDataByAsnRefs, fetchCancelDataByRefs };
+module.exports = { groupBookingRows, fetchCancelDataByPoRefs, fetchCancelDataByAsnRefs, fetchCancelDataByRefs };

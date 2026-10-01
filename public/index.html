@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f3">
+  <title>CarrierFlex | Message activity</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f6f3;
+      --surface: #ffffff;
+      --ink: #172b28;
+      --muted: #687773;
+      --line: #dce4df;
+      --green: #176b57;
+      --green-soft: #e3f1eb;
+      --orange: #b65a24;
+      --orange-soft: #fff0e4;
+      --red: #ae3936;
+      --red-soft: #fbe9e7;
+      --blue: #335f84;
+      --blue-soft: #e8f0f7;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --display: "Bahnschrift", "Arial Narrow", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: repeating-linear-gradient(135deg, transparent 0, transparent 23px, rgba(23, 107, 87, .025) 24px, transparent 25px);
+      font: 14px/1.45 "Segoe UI", Tahoma, sans-serif;
+    }
+    .masthead {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px clamp(18px, 4vw, 58px);
+      color: #f4f8f4;
+      background: #173b35;
+      border-bottom: 4px solid #e48b45;
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #8eafa4; color: #f5a561; font: 700 18px var(--display); }
+    .brand-name { margin: 0; font: 700 18px var(--display); letter-spacing: 0; }
+    .brand-subtitle { margin-top: 2px; color: #b8cbc3; font-size: 11px; text-transform: uppercase; }
+    .live-state { display: flex; align-items: center; gap: 8px; color: #d5e5dc; font-size: 12px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #89d2a7; box-shadow: 0 0 0 4px rgba(137, 210, 167, .14); }
+    main { max-width: 1500px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 58px) 54px; }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+    .eyebrow { margin: 0 0 6px; color: var(--green); font: 700 11px var(--mono); text-transform: uppercase; }
+    h1 { margin: 0; font: 700 32px/1.05 var(--display); letter-spacing: 0; }
+    .caption { max-width: 460px; margin: 0; color: var(--muted); text-align: right; font-size: 12px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 26px; border: 1px solid var(--line); background: rgba(255,255,255,.78); }
+    .metric { min-height: 91px; padding: 15px 19px; border-right: 1px solid var(--line); }
+    .metric:last-child { border-right: 0; }
+    .metric-label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .metric-value { margin-top: 7px; font: 700 27px/1 var(--display); }
+    .metric-value.success { color: var(--green); }
+    .metric-value.skips { color: var(--orange); }
+    .metric-value.failures { color: var(--red); }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 13px 14px; background: #e9eeea; border: 1px solid var(--line); border-bottom: 0; }
+    .toolbar input, .toolbar select, .refresh {
+      height: 37px; border: 1px solid #c7d2cb; border-radius: 2px; background: #fff; color: var(--ink); font: inherit;
+    }
+    .toolbar input { flex: 1 1 260px; min-width: 190px; padding: 0 11px; }
+    .toolbar select { min-width: 145px; padding: 0 29px 0 10px; }
+    .refresh { display: inline-flex; align-items: center; gap: 8px; padding: 0 13px; cursor: pointer; font-weight: 600; }
+    .refresh:hover { border-color: var(--green); color: var(--green); }
+    .refresh svg { width: 15px; height: 15px; }
+    .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 11px 14px; color: #576962; background: #f8faf8; border-bottom: 1px solid var(--line); font: 700 10px var(--mono); letter-spacing: 0; text-transform: uppercase; white-space: nowrap; }
+    td { padding: 13px 14px; border-bottom: 1px solid #e9eeea; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f8fbf9; }
+    .time { min-width: 142px; color: var(--muted); font: 11px/1.55 var(--mono); white-space: pre-line; }
+    .flow { min-width: 120px; font-weight: 650; }
+    .flow small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .ref { min-width: 145px; font: 12px var(--mono); overflow-wrap: anywhere; }
+    .ref small { display: block; margin-top: 5px; color: var(--muted); font: 11px/1.45 "Segoe UI", Tahoma, sans-serif; }
+    .booking { min-width: 125px; font: 12px var(--mono); overflow-wrap: anywhere; }
+    .result-cell { min-width: 145px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 2px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+    .badge.submitted { color: var(--green); background: var(--green-soft); }
+    .badge.skipped { color: var(--orange); background: var(--orange-soft); }
+    .badge.failed { color: var(--red); background: var(--red-soft); }
+    .badge.local { color: var(--blue); background: var(--blue-soft); }
+    .badge.info { color: #59645f; background: #edf0ed; }
+    .detail { min-width: 240px; max-width: 420px; color: #52615c; font-size: 12px; overflow-wrap: anywhere; }
+    .artifact { display: block; margin-top: 5px; color: var(--muted); font: 10px/1.45 var(--mono); overflow-wrap: anywhere; }
+    .empty { padding: 42px 20px; color: var(--muted); text-align: center; }
+    .footnote { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
+    .updated { margin-left: auto; color: var(--muted); font: 10px var(--mono); }
+    @media (max-width: 720px) {
+      .masthead { min-height: 68px; padding: 12px 16px; }
+      main { padding-top: 24px; }
+      .page-heading { display: block; }
+      h1 { font-size: 28px; }
+      .caption { margin-top: 10px; text-align: left; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .toolbar select { flex: 1; }
+      .refresh { flex: 0 0 42px; justify-content: center; padding: 0; font-size: 0; }
+      .updated { flex-basis: 100%; margin-left: 0; }
+      h1 { overflow-wrap: anywhere; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      main { animation: appear .35s ease-out both; }
+      @keyframes appear { from { opacity: .5; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">CF</div>
+      <div><p class="brand-name">CarrierFlex</p><div class="brand-subtitle">Message operations</div></div>
+    </div>
+    <div class="live-state"><span class="live-dot" aria-hidden="true"></span><span>Log monitor</span></div>
+  </header>
+  <main>
+    <section class="page-heading">
+      <div><p class="eyebrow">Activity / outbound</p><h1>Message activity</h1></div>
+      <p class="caption">Cancellation status reflects the VBKREQ submission recorded by this service. E2open processing acknowledgments are not included in these logs.</p>
+    </section>
+    <section class="metrics" aria-label="Log summary">
+      <div class="metric"><div class="metric-label">Visible events</div><div class="metric-value" id="metric-total">0</div></div>
+      <div class="metric"><div class="metric-label">Submitted</div><div class="metric-value success" id="metric-submitted">0</div></div>
+      <div class="metric"><div class="metric-label">Skipped</div><div class="metric-value skips" id="metric-skipped">0</div></div>
+      <div class="metric"><div class="metric-label">Failed</div><div class="metric-value failures" id="metric-failed">0</div></div>
+    </section>
+    <section aria-label="Message log entries">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search ASN, PO, VB reference, file..." aria-label="Search log entries">
+        <select id="flow-filter" aria-label="Filter by flow">
+          <option value="all">All flows</option><option value="cancel">VB cancellation</option><option value="bst">Bulk status</option>
+        </select>
+        <select id="status-filter" aria-label="Filter by result">
+          <option value="all">All results</option><option value="submitted">Submitted</option><option value="skipped">Skipped</option><option value="failed">Failed</option><option value="local">Saved locally</option><option value="info">No output</option>
+        </select>
+        <button class="refresh" id="refresh" type="button" title="Refresh logs" aria-label="Refresh logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg>Refresh
+        </button>
+        <span class="updated" id="updated">Loading logs...</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Flow</th><th>PO reference(s)</th><th>ASN</th><th>VB reference</th><th>Result / related ASNs</th><th>Details / artifact</th></tr></thead>
+          <tbody id="entries"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden>No matching message activity.</div>
+      </div>
+      <p class="footnote">A submitted cancellation means the VBKREQ upload completed; E2open acknowledgments are not recorded here. BST PO references appear when supplied by the carrier file.</p>
+    </section>
+  </main>
+  <script>
+    const labels = { submitted: 'Submitted', skipped: 'Skipped', failed: 'Failed', local: 'Saved locally', info: 'No output' };
+    let allEntries = [];
+
+    function text(value) { return String(value || ''); }
+    function makeCell(className, value) {
+      const cell = document.createElement('td');
+      if (className) cell.className = className;
+      cell.textContent = value;
+      return cell;
+    }
+    function formatTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value || 'Unknown time';
+      return `${date.toLocaleDateString()}\n${date.toLocaleTimeString()}`;
+    }
+    function applyFilters() {
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      const flow = document.getElementById('flow-filter').value;
+      const status = document.getElementById('status-filter').value;
+      const visible = allEntries.filter(entry => {
+        const searchable = [entry.asn, entry.bookingRef, entry.fileName, entry.detail, ...entry.poRefs, ...entry.asnRefs].join(' ').toLowerCase();
+        return (flow === 'all' || entry.type === flow) && (status === 'all' || entry.status === status) && (!query || searchable.includes(query));
+      });
+      document.getElementById('metric-total').textContent = visible.length;
+      document.getElementById('metric-submitted').textContent = visible.filter(entry => entry.status === 'submitted').length;
+      document.getElementById('metric-skipped').textContent = visible.filter(entry => entry.status === 'skipped').length;
+      document.getElementById('metric-failed').textContent = visible.filter(entry => entry.status === 'failed').length;
+
+      const body = document.getElementById('entries');
+      body.replaceChildren();
+      for (const entry of visible) {
+        const row = document.createElement('tr');
+        row.append(makeCell('time', formatTime(entry.timestamp)));
+
+        const flowCell = makeCell('flow', entry.kindLabel);
+        const flowSub = document.createElement('small');
+        flowSub.textContent = entry.local ? 'Local output' : 'Outbound';
+        flowCell.append(flowSub);
+        row.append(flowCell);
+
+        row.append(makeCell('ref', entry.poRefs.length ? entry.poRefs.join(', ') : '—'));
+        row.append(makeCell('ref', entry.asn || (entry.asnRefs.length ? entry.asnRefs.join(', ') : '—')));
+        row.append(makeCell('booking', entry.bookingRef || '—'));
+
+        const resultCell = makeCell('result-cell', '');
+        const badge = document.createElement('span');
+        badge.className = `badge ${entry.status}`;
+        badge.textContent = entry.resultLabel || labels[entry.status] || 'No output';
+        resultCell.append(badge);
+        if (entry.status === 'skipped' && entry.otherAsns.length) {
+          const related = document.createElement('small');
+          related.className = 'artifact';
+          related.textContent = `Related ASN(s): ${[...new Set(entry.otherAsns.flatMap(item => item.asns || []))].join(', ')}`;
+          resultCell.append(related);
+        }
+        row.append(resultCell);
+
+        const detail = makeCell('detail', entry.detail || '—');
+        if (entry.fileName) {
+          const artifact = document.createElement('span');
+          artifact.className = 'artifact';
+          artifact.textContent = entry.fileName;
+          detail.append(artifact);
+        }
+        row.append(detail);
+        body.append(row);
+      }
+      document.getElementById('empty').hidden = visible.length > 0;
+    }
+
+    async function loadLogs() {
+      const updated = document.getElementById('updated');
+      try {
+        const response = await fetch('/api/logs', { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load logs');
+        allEntries = data.entries || [];
+        updated.textContent = `Updated ${new Date(data.updatedAt).toLocaleTimeString()}`;
+        applyFilters();
+      } catch (error) {
+        updated.textContent = error.message;
+      }
+    }
+
+    document.getElementById('search').addEventListener('input', applyFilters);
+    document.getElementById('flow-filter').addEventListener('change', applyFilters);
+    document.getElementById('status-filter').addEventListener('change', applyFilters);
+    document.getElementById('refresh').addEventListener('click', loadLogs);
+    loadLogs();
+    setInterval(loadLogs, 15000);
+  </script>
+</body>
+</html>

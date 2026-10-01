@@ -85,6 +85,28 @@ async function processCancelEvent(input) {
       });
       row.Booking_Ref = outbound856.bookingRef;
       console.log(`[VB Cancel] ASN ${row.ASN_Ref} resolved to ${row.Booking_Ref} from ${outbound856.blobName}`);
+      const rowPoRefs = row.PO_Refs && row.PO_Refs.length
+        ? row.PO_Refs
+        : (row.PO_Number ? [row.PO_Number] : poRefs);
+      if (outbound856.sameDayOtherAsns.length) {
+        const otherAsns = outbound856.sameDayOtherAsns.flatMap(message => message.asns);
+        const uniqueOtherAsns = [...new Set(otherAsns)];
+        const reason = `${row.Booking_Ref} is also used by same-day outbound 856 message(s) for ASN(s): ${uniqueOtherAsns.join(', ')}`;
+        console.warn(`[VB Cancel] Skipping ASN ${row.ASN_Ref}: ${reason}`);
+        appendLog({
+          timestamp: new Date().toISOString(),
+          poRefs: rowPoRefs,
+          asnRefs,
+          asnRef: row.ASN_Ref,
+          bookingRef: row.Booking_Ref,
+          outbound856Blob: outbound856.blobName,
+          sameDayOtherAsns: outbound856.sameDayOtherAsns,
+          skipped: true,
+          skipReason: reason,
+        });
+        skipped++;
+        continue;
+      }
 
       const { xml, filename, bookingRef } = buildCancelXml(row, profile.vbkreqSenderId);
 
@@ -97,7 +119,7 @@ async function processCancelEvent(input) {
 
       appendLog({
         timestamp:  new Date().toISOString(),
-        poRefs,
+        poRefs: rowPoRefs,
         asnRefs,
         asnRef:     row.ASN_Ref,
         bookingRef,
@@ -113,6 +135,15 @@ async function processCancelEvent(input) {
       console.error(`[VB Cancel] ${msg}`);
       errors.push(msg);
       skipped++;
+      appendLog({
+        timestamp: new Date().toISOString(),
+        poRefs: row.PO_Refs && row.PO_Refs.length
+          ? row.PO_Refs
+          : (row.PO_Number ? [row.PO_Number] : poRefs),
+        asnRef: row.ASN_Ref,
+        bookingRef: row.Booking_Ref || '',
+        errors: [msg],
+      });
     }
   }
 
