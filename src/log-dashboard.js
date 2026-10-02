@@ -5,9 +5,14 @@ const http = require('http');
 const path = require('path');
 const cfg = require('./config');
 
-const PORT = Number.parseInt(process.env.LOG_DASHBOARD_PORT || '3100', 10);
-const HOST = process.env.LOG_DASHBOARD_HOST || '127.0.0.1';
 const DASHBOARD_FILE = path.join(__dirname, '..', 'public', 'index.html');
+
+function getServerOptions(env = process.env) {
+  return {
+    port: Number.parseInt(env.PORT || env.LOG_DASHBOARD_PORT || '3100', 10),
+    host: env.LOG_DASHBOARD_HOST || (env.WEBSITE_HOSTNAME ? '0.0.0.0' : '127.0.0.1'),
+  };
+}
 
 function readLog(fileName) {
   const filePath = path.join(cfg.stateDir, fileName);
@@ -113,10 +118,37 @@ const server = http.createServer((request, response) => {
   response.end('Not found');
 });
 
-if (require.main === module) {
-  server.listen(PORT, HOST, () => {
-    console.log(`[Log Dashboard] Listening at http://${HOST}:${PORT}`);
+function startDashboard() {
+  if (server.listening) return Promise.resolve();
+  const { host, port } = getServerOptions();
+  return new Promise((resolve, reject) => {
+    const onError = error => {
+      server.removeListener('listening', onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      server.removeListener('error', onError);
+      console.log(`[Log Dashboard] Listening at http://${host}:${port}`);
+      resolve();
+    };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, host);
   });
 }
 
-module.exports = { getLogEntries, normalizeEntry, server };
+function stopDashboard() {
+  if (!server.listening) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    server.close(error => error ? reject(error) : resolve());
+  });
+}
+
+if (require.main === module) {
+  startDashboard().catch(error => {
+    console.error(`[Log Dashboard] Could not start: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { getLogEntries, getServerOptions, normalizeEntry, startDashboard, stopDashboard, server };

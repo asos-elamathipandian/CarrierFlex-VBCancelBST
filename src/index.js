@@ -13,9 +13,12 @@ require('./config'); // loads .env on require
 const sbListener      = require('./service-bus-listener');
 const { processCancelEvent } = require('./vb-cancel-pipeline');
 const { startPoller } = require('./bst-pipeline');
+const { startDashboard, stopDashboard } = require('./log-dashboard');
 
 async function main() {
   console.log('=== CarrierFlex VB Cancel + BST service starting ===');
+
+  await startDashboard();
 
   // 1. Start Azure Service Bus listener for VB cancellations.
   sbListener.start(processCancelEvent);
@@ -26,7 +29,7 @@ async function main() {
   // Graceful shutdown
   const shutdown = async (signal) => {
     console.log(`\n[Shutdown] Signal ${signal} received — stopping…`);
-    await sbListener.stop();
+    await Promise.all([sbListener.stop(), stopDashboard()]);
     process.exit(0);
   };
 

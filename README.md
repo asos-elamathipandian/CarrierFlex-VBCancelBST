@@ -12,14 +12,15 @@ npm run dashboard
 
 Open [http://127.0.0.1:3100](http://127.0.0.1:3100). The dashboard reads `state/cancel-log.json` and `state/bst-log.json`, refreshes automatically every 15 seconds, and provides search plus flow and result filters.
 
-The dashboard can run alongside the background service. `npm start` starts the Service Bus cancellation listener and BST poller; it does not start the dashboard.
+`npm start` starts the dashboard together with the Service Bus cancellation listener and BST poller. Use `npm run dashboard` when you only want to run the dashboard locally.
 
 Optional environment variables:
 
 - `LOG_DASHBOARD_HOST` changes the listen address. The default is `127.0.0.1`, which keeps the dashboard local to the machine.
 - `LOG_DASHBOARD_PORT` changes the port. The default is `3100`.
+- `PORT` is used when provided by a hosting platform such as Azure App Service. When `WEBSITE_HOSTNAME` is present, the default listen address is `0.0.0.0` so the platform can route traffic to the app.
 
-Keep the default local-only host unless access from other machines is intentionally required and appropriately protected.
+Keep the default local-only host for local development. Azure App Service sets its own host and port defaults; `LOG_DASHBOARD_HOST` can override the listen address if needed.
 
 ## Dashboard Fields
 

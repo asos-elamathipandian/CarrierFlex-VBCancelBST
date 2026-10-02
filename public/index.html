@@ -153,7 +153,7 @@
     <div class="guide-content">
       <section class="guide-section">
         <h3>Getting started</h3>
-        <p>Run <code>npm run dashboard</code> from the project folder, then open <code>http://127.0.0.1:3100</code>. The dashboard can run alongside the service started with <code>npm start</code>. It reads the cancellation and BST logs and refreshes every 15 seconds.</p>
+        <p>Run <code>npm start</code> to launch the dashboard with the cancellation listener and BST poller, or use <code>npm run dashboard</code> to run only the dashboard. Locally, open <code>http://127.0.0.1:3100</code>. It reads the cancellation and BST logs and refreshes every 15 seconds.</p>
       </section>
       <section class="guide-section">
         <h3>Finding activity</h3>
@@ -174,7 +174,7 @@
       </section>
       <section class="guide-section">
         <h3>Log sources</h3>
-        <p>Activity comes from <code>state/cancel-log.json</code> and <code>state/bst-log.json</code>. Dashboard host and port can be changed with <code>LOG_DASHBOARD_HOST</code> and <code>LOG_DASHBOARD_PORT</code>; by default it is available only on this machine.</p>
+        <p>Activity comes from <code>state/cancel-log.json</code> and <code>state/bst-log.json</code>. The dashboard uses the platform-provided <code>PORT</code> when available. Locally, it defaults to port <code>3100</code> and is available only on this machine.</p>
       </section>
     </div>
   </dialog>

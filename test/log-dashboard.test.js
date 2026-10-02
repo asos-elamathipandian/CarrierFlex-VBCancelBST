@@ -1,7 +1,13 @@
 'use strict';
 
 const assert = require('assert');
-const { normalizeEntry } = require('../src/log-dashboard');
+const { getServerOptions, normalizeEntry } = require('../src/log-dashboard');
+
+assert.deepStrictEqual(
+  getServerOptions({ PORT: '8080', WEBSITE_HOSTNAME: 'carrierflex.azurewebsites.net' }),
+  { port: 8080, host: '0.0.0.0' }
+);
+assert.deepStrictEqual(getServerOptions({}), { port: 3100, host: '127.0.0.1' });
 
 const submittedCancel = normalizeEntry({
   timestamp: '2026-10-01T08:00:00.000Z',
