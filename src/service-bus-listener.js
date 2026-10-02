@@ -3,17 +3,18 @@
 /**
  * service-bus-listener.js
  *
- * Subscribes to an Azure Service Bus queue that publishes PO cancellation
- * events.  Each message is expected to be a JSON body of the shape:
+ * Subscribes to an Azure Service Bus queue or topic subscription that
+ * publishes PO/ASN cancellation events. Supported message bodies include:
  *
  *   { "poRefs": ["1234567", "2345678", ...] }
+ *   { "PoId": "1234567", "AsnIds": ["49870000005277"] }
  *
  * or a plain JSON array:
  *
  *   ["1234567", "2345678"]
  *
  * For every message received the supplied handler function is called:
- *   handler(poRefs: string[]) => Promise<void>
+ *   handler({ poRefs: string[], asnRefs: string[] }) => Promise<void>
  *
  * On success the message is completed (removed from the queue).
  * On handler error the message is abandoned (returned to the queue for retry).
@@ -26,13 +27,34 @@ let sbClient   = null;
 let receiver   = null;
 let isRunning  = false;
 
+function normalizeCancellationRequest(body) {
+  let decoded = body;
+  if (typeof decoded === 'string') decoded = JSON.parse(decoded);
+
+  if (Array.isArray(decoded)) {
+    return { poRefs: decoded.map(String), asnRefs: [] };
+  }
+  if (!decoded || typeof decoded !== 'object') {
+    throw new Error(`Unexpected message format: ${JSON.stringify(body)}`);
+  }
+
+  const fields = new Map(Object.entries(decoded).map(([key, value]) => [key.toLowerCase(), value]));
+  const poValue = fields.get('porefs') ?? fields.get('poids') ?? fields.get('poid');
+  const asnValue = fields.get('asnrefs') ?? fields.get('asnids') ?? fields.get('asnid');
+  const toRefs = value => (value === undefined ? [] : (Array.isArray(value) ? value : [value]))
+    .map(item => String(item).trim())
+    .filter(Boolean);
+
+  return { poRefs: toRefs(poValue), asnRefs: toRefs(asnValue) };
+}
+
 /**
  * Start the Service Bus listener.
  *
  * @param {function} handler - async (poRefs: string[]) => void
  */
 function start(handler) {
-  const { connectionString, queueName, maxMessages } = cfg.serviceBus;
+  const { connectionString, queueName, topicName, subscriptionName } = cfg.serviceBus;
 
   if (!connectionString || connectionString.startsWith('Endpoint=sb://your-namespace')) {
     console.warn('[Service Bus] Connection string not configured — listener disabled.');
@@ -40,31 +62,25 @@ function start(handler) {
   }
 
   sbClient = new ServiceBusClient(connectionString);
-  receiver = sbClient.createReceiver(queueName, { receiveMode: 'peekLock' });
+  const isTopicSubscription = Boolean(subscriptionName);
+  receiver = isTopicSubscription
+    ? sbClient.createReceiver(topicName, subscriptionName, { receiveMode: 'peekLock' })
+    : sbClient.createReceiver(queueName, { receiveMode: 'peekLock' });
 
   const messageHandler = async (message) => {
-    let poRefs;
     try {
-      const body = message.body;
-      if (Array.isArray(body)) {
-        poRefs = body.map(String);
-      } else if (body && Array.isArray(body.poRefs)) {
-        poRefs = body.poRefs.map(String);
-      } else if (typeof body === 'string') {
-        const parsed = JSON.parse(body);
-        poRefs = Array.isArray(parsed) ? parsed.map(String) : (parsed.poRefs || []).map(String);
-      } else {
-        throw new Error(`Unexpected message format: ${JSON.stringify(body)}`);
-      }
+      const request = normalizeCancellationRequest(message.body);
 
-      if (!poRefs.length) {
-        console.warn('[Service Bus] Message contained empty poRefs — completing without processing.');
+      if (!request.poRefs.length && !request.asnRefs.length) {
+        console.warn('[Service Bus] Message contained no PO or ASN refs — completing without processing.');
         await receiver.completeMessage(message);
         return;
       }
 
-      console.log(`[Service Bus] Received cancel event for ${poRefs.length} PO(s): ${poRefs.join(', ')}`);
-      await handler(poRefs);
+      console.log(
+        `[Service Bus] Received cancel event: PO(s) [${request.poRefs.join(', ')}], ASN(s) [${request.asnRefs.join(', ')}]`
+      );
+      await handler(request);
       await receiver.completeMessage(message);
     } catch (err) {
       console.error('[Service Bus] Handler error:', err.message);
@@ -86,7 +102,9 @@ function start(handler) {
   });
 
   isRunning = true;
-  console.log(`[Service Bus] Listening on queue "${queueName}"…`);
+  console.log(isTopicSubscription
+    ? `[Service Bus] Listening on topic "${topicName}" subscription "${subscriptionName}"…`
+    : `[Service Bus] Listening on queue "${queueName}"…`);
 }
 
 async function stop() {
@@ -102,4 +120,4 @@ async function stop() {
   console.log('[Service Bus] Listener stopped.');
 }
 
-module.exports = { start, stop, isRunning: () => isRunning };
+module.exports = { normalizeCancellationRequest, start, stop, isRunning: () => isRunning };

@@ -20,6 +20,8 @@ function optional(name, defaultVal = '') {
 module.exports = {
   serviceBus: {
     connectionString: optional('SERVICEBUS_CONNECTION_STRING'),
+    topicName:        optional('SERVICEBUS_TOPIC_NAME', 'carrier-change'),
+    subscriptionName: optional('SERVICEBUS_SUBSCRIPTION_NAME'),
     queueName:        optional('SERVICEBUS_QUEUE_NAME', 'po-cancel-events'),
     maxMessages:      parseInt(optional('SERVICEBUS_MAX_MESSAGES', '10'), 10),
   },

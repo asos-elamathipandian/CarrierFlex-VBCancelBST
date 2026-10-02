@@ -14,6 +14,19 @@ Open [http://127.0.0.1:3100](http://127.0.0.1:3100). The dashboard reads `state/
 
 `npm start` starts the dashboard together with the Service Bus cancellation listener and BST poller. Use `npm run dashboard` when you only want to run the dashboard locally.
 
+## Service Bus Cancellation Input
+
+The listener accepts JSON messages containing either the legacy `poRefs` array or the carrier-change topic shape:
+
+```json
+{
+	"PoId": "10200375991",
+	"AsnIds": ["42152201407698"]
+}
+```
+
+To receive from a topic subscription, configure `SERVICEBUS_SUBSCRIPTION_NAME` and `SERVICEBUS_CONNECTION_STRING`. The topic defaults to `carrier-change` and can be overridden with `SERVICEBUS_TOPIC_NAME`. When no subscription name is configured, the listener retains the queue mode using `SERVICEBUS_QUEUE_NAME`.
+
 Optional environment variables:
 
 - `LOG_DASHBOARD_HOST` changes the listen address. The default is `127.0.0.1`, which keeps the dashboard local to the machine.

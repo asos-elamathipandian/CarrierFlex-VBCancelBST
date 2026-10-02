@@ -10,7 +10,7 @@
     "cancel": "node src/run-cancel-once.js",
     "bst": "node src/run-bst-once.js",
     "dashboard": "node src/log-dashboard.js",
-    "test": "node test/outbound-856-reader.test.js && node test/log-dashboard.test.js && node test/bst-csv-parser.test.js && node test/cancel-po-grouping.test.js"
+    "test": "node test/outbound-856-reader.test.js && node test/log-dashboard.test.js && node test/bst-csv-parser.test.js && node test/cancel-po-grouping.test.js && node test/service-bus-listener.test.js"
   },
   "dependencies": {
     "@azure/identity": "^4.13.1",
