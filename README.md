@@ -14,7 +14,7 @@ Open [http://127.0.0.1:3100](http://127.0.0.1:3100). The dashboard reads `state/
 
 `npm start` starts the dashboard together with the Service Bus cancellation listener and BST poller. Use `npm run dashboard` when you only want to run the dashboard locally.
 
-For Windows App Service, the root `web.config` routes IIS requests to the Node entry point at `src/index.js`. Keep this file in the deployed package; without it, IIS can show the default permission or under-construction page instead of the dashboard.
+For Windows App Service, the root `web.config` routes IIS requests to the Node entry point at `src/index.js`. The dashboard preserves the IISNode `PORT` value because it can be a named pipe rather than a numeric TCP port. Keep `web.config` in the deployed package; without it, IIS can show the default permission or under-construction page instead of the dashboard.
 
 ## Service Bus Cancellation Input
 

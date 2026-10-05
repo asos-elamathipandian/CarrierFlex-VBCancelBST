@@ -7,6 +7,10 @@ assert.deepStrictEqual(
   getServerOptions({ PORT: '8080', WEBSITE_HOSTNAME: 'carrierflex.azurewebsites.net' }),
   { port: 8080, host: '0.0.0.0' }
 );
+assert.deepStrictEqual(
+  getServerOptions({ PORT: '\\\\.\\pipe\\iisnode-test', WEBSITE_HOSTNAME: 'carrierflex.azurewebsites.net' }),
+  { port: '\\\\.\\pipe\\iisnode-test', host: undefined }
+);
 assert.deepStrictEqual(getServerOptions({}), { port: 3100, host: '127.0.0.1' });
 
 const submittedCancel = normalizeEntry({

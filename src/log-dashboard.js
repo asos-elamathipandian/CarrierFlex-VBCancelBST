@@ -8,9 +8,13 @@ const cfg = require('./config');
 const DASHBOARD_FILE = path.join(__dirname, '..', 'public', 'index.html');
 
 function getServerOptions(env = process.env) {
+  const configuredPort = env.PORT || env.LOG_DASHBOARD_PORT || '3100';
+  const port = /^\d+$/.test(configuredPort) ? Number(configuredPort) : configuredPort;
+  const isPipeAddress = typeof port === 'string';
+
   return {
-    port: Number.parseInt(env.PORT || env.LOG_DASHBOARD_PORT || '3100', 10),
-    host: env.LOG_DASHBOARD_HOST || (env.WEBSITE_HOSTNAME ? '0.0.0.0' : '127.0.0.1'),
+    port,
+    host: env.LOG_DASHBOARD_HOST || (isPipeAddress ? undefined : (env.WEBSITE_HOSTNAME ? '0.0.0.0' : '127.0.0.1')),
   };
 }
 
@@ -128,12 +132,15 @@ function startDashboard() {
     };
     const onListening = () => {
       server.removeListener('error', onError);
-      console.log(`[Log Dashboard] Listening at http://${host}:${port}`);
+      console.log(typeof port === 'string'
+        ? '[Log Dashboard] Listening on the App Service named pipe.'
+        : `[Log Dashboard] Listening at http://${host}:${port}`);
       resolve();
     };
     server.once('error', onError);
     server.once('listening', onListening);
-    server.listen(port, host);
+    if (host) server.listen(port, host);
+    else server.listen(port);
   });
 }
 
