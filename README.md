@@ -12,7 +12,7 @@ npm run dashboard
 
 Open [http://127.0.0.1:3100](http://127.0.0.1:3100). The dashboard reads `state/cancel-log.json` and `state/bst-log.json`, refreshes automatically every 15 seconds, and provides search plus flow and result filters.
 
-`npm start` starts the dashboard together with the Service Bus cancellation listener and BST poller. Use `npm run dashboard` when you only want to run the dashboard locally.
+`npm start` starts the dashboard together with the Service Bus listeners and optional BST SFTP poller. Use `npm run dashboard` when you only want to run the dashboard locally.
 
 For Windows App Service, the root `web.config` routes IIS requests to the Node entry point at `src/index.js`. The dashboard preserves the IISNode `PORT` value because it can be a named pipe rather than a numeric TCP port. Keep `web.config` in the deployed package; without it, IIS can show the default permission or under-construction page instead of the dashboard.
 
@@ -36,6 +36,40 @@ Optional environment variables:
 - `PORT` is used when provided by a hosting platform such as Azure App Service. When `WEBSITE_HOSTNAME` is present, the default listen address is `0.0.0.0` so the platform can route traffic to the app.
 
 Keep the default local-only host for local development. Azure App Service sets its own host and port defaults; `LOG_DASHBOARD_HOST` can override the listen address if needed.
+
+## Service Bus Milestone CSV Input
+
+The service also accepts JSON `FilePublished` events:
+
+```json
+{
+	"metadata": { "eventName": "FilePublished" },
+	"data": {
+		"fileName": "milestones.csv",
+		"blobUri": "https://aspdsctinthubarchive.blob.core.windows.net/cfs/DHL/milestones.csv?<read-only-SAS>",
+		"source": "DHL"
+	}
+}
+```
+
+The message body must be JSON only, without the copied viewer CSS. The service downloads `data.blobUri` directly using its SAS, passes the temporary CSV to the existing BST parser/generator/uploader, and removes the temporary file. No blob-container credentials or changes to `config/inputs.json` are required. The CSV must use the existing ASN and milestone column mappings. `data.source` is publication metadata; it does not override the CSV carrier column or `CARRIER_CODE`.
+
+For a dedicated milestones subscription, set these values in `config/.env` or deployment application settings:
+
+```dotenv
+MILESTONES_SERVICEBUS_TOPIC_NAME=<milestones-topic>
+MILESTONES_SERVICEBUS_SUBSCRIPTION_NAME=<milestones-subscription>
+MILESTONES_SERVICEBUS_CONNECTION_STRING=<connection-string-with-listen-permission>
+CARRIER_SFTP_ENABLED=false
+```
+
+The milestones connection string falls back to `SERVICEBUS_CONNECTION_STRING` when blank. Leave the dedicated topic/subscription settings blank if publications arrive on the existing cancellation receiver; that receiver supports both event types. Only configure a separate receiver for a distinct subscription. SFTP polling remains enabled by default for backward compatibility.
+
+Downloads require HTTPS and an explicitly allowed storage host/container. Defaults are `aspdsctinthubarchive.blob.core.windows.net` and `cfs`; use comma-separated `MILESTONES_ALLOWED_BLOB_HOSTS` and `MILESTONES_ALLOWED_BLOB_CONTAINERS` to change them. `MILESTONES_DOWNLOAD_TIMEOUT_MS` defaults to 60000 and `MILESTONES_MAX_DOWNLOAD_BYTES` defaults to 52428800 (50 MiB). Storage firewall/private endpoint restrictions still apply. Do not log or commit SAS URLs; expired SAS tokens require a refreshed publication URL.
+
+Messages complete only after all parsed BST rows succeed. Download, parse, and upload failures abandon the message for Service Bus retry and eventual dead-lettering according to the subscription's delivery limit. Fully successful blobs are tracked under `STATE_DIR/milestone-files` by host/path, ignoring SAS query parameters, so redelivery with a renewed SAS does not reprocess the same blob. Publishers must use a unique blob path for each new file. Keep this state persistent across restarts.
+
+This is file-level duplicate protection, not exactly-once delivery: partial upload failures or a crash after an upload but before recording completion can resend rows. The state store is intended for a single service instance; multiple instances require shared, atomic deduplication storage. The receiver renews message locks for up to 20 minutes during processing.
 
 ## Dashboard Fields
 

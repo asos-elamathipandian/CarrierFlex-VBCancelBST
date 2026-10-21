@@ -3,28 +3,32 @@
 /**
  * index.js — CarrierFlex VB Cancel + BST entry point
  *
- * Starts two concurrent processes:
- *   1. Azure Service Bus listener  → triggers VBKREQ cancellation pipeline
- *   2. Carrier SFTP poller (cron)  → triggers BST generation pipeline
+ * Starts Service Bus listeners for cancellations and milestone CSV publications,
+ * plus the optional carrier SFTP poller for BST generation.
  */
 
-require('./config'); // loads .env on require
+const cfg = require('./config');
 
 const sbListener      = require('./service-bus-listener');
 const { processCancelEvent } = require('./vb-cancel-pipeline');
 const { startPoller } = require('./bst-pipeline');
 const { startDashboard, stopDashboard } = require('./log-dashboard');
+const { createFilePublicationHandler } = require('./milestone-file');
 
 async function main() {
   console.log('=== CarrierFlex VB Cancel + BST service starting ===');
 
   await startDashboard();
 
-  // 1. Start Azure Service Bus listener for VB cancellations.
-  sbListener.start(processCancelEvent);
+  // 1. Start Azure Service Bus listeners.
+  const processFilePublication = createFilePublicationHandler();
+  sbListener.start(processCancelEvent, processFilePublication);
+  if (cfg.milestones.serviceBus.subscriptionName) {
+    sbListener.start(null, processFilePublication, cfg.milestones.serviceBus);
+  }
 
   // 2. Start carrier SFTP poller for BST source files.
-  startPoller();
+  if (cfg.sftpCarrier.enabled) startPoller();
 
   // Graceful shutdown
   const shutdown = async (signal) => {

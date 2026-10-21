@@ -4,7 +4,7 @@
  * service-bus-listener.js
  *
  * Subscribes to an Azure Service Bus queue or topic subscription that
- * publishes PO/ASN cancellation events. Supported message bodies include:
+ * publishes PO/ASN cancellations or FilePublished CSV events. Cancellation bodies include:
  *
  *   { "poRefs": ["1234567", "2345678", ...] }
  *   { "PoId": "1234567", "AsnIds": ["49870000005277"] }
@@ -23,19 +23,24 @@
 const { ServiceBusClient } = require('@azure/service-bus');
 const cfg = require('./config');
 
-let sbClient   = null;
-let receiver   = null;
-let isRunning  = false;
+const listeners = [];
 
 function normalizeCancellationRequest(body) {
   let decoded = body;
-  if (typeof decoded === 'string') decoded = JSON.parse(decoded);
+  if (Buffer.isBuffer(decoded)) decoded = decoded.toString('utf8');
+  if (typeof decoded === 'string') {
+    try {
+      decoded = JSON.parse(decoded);
+    } catch (_) {
+      throw new Error('Service Bus message must contain valid JSON');
+    }
+  }
 
   if (Array.isArray(decoded)) {
     return { poRefs: decoded.map(String), asnRefs: [] };
   }
   if (!decoded || typeof decoded !== 'object') {
-    throw new Error(`Unexpected message format: ${JSON.stringify(body)}`);
+    throw new Error('Unexpected Service Bus message format');
   }
 
   const fields = new Map(Object.entries(decoded).map(([key, value]) => [key.toLowerCase(), value]));
@@ -51,25 +56,30 @@ function normalizeCancellationRequest(body) {
 /**
  * Start the Service Bus listener.
  *
- * @param {function} handler - async (poRefs: string[]) => void
+ * @param {object} receiver - receiver used to settle the message
+ * @param {function} handler - async ({ poRefs, asnRefs }) => void
+ * @param {function} fileHandler - async (FilePublished event) => void
  */
-function start(handler) {
-  const { connectionString, queueName, topicName, subscriptionName } = cfg.serviceBus;
-
-  if (!connectionString || connectionString.startsWith('Endpoint=sb://your-namespace')) {
-    console.warn('[Service Bus] Connection string not configured — listener disabled.');
-    return;
-  }
-
-  sbClient = new ServiceBusClient(connectionString);
-  const isTopicSubscription = Boolean(subscriptionName);
-  receiver = isTopicSubscription
-    ? sbClient.createReceiver(topicName, subscriptionName, { receiveMode: 'peekLock' })
-    : sbClient.createReceiver(queueName, { receiveMode: 'peekLock' });
-
-  const messageHandler = async (message) => {
+function createMessageHandler(receiver, handler, fileHandler) {
+  return async (message) => {
     try {
-      const request = normalizeCancellationRequest(message.body);
+      let body = message.body;
+      if (Buffer.isBuffer(body)) body = body.toString('utf8');
+      if (typeof body === 'string') {
+        try {
+          body = JSON.parse(body);
+        } catch (_) {
+          throw new Error('Service Bus message must contain valid JSON');
+        }
+      }
+      if (body?.metadata?.eventName === 'FilePublished' || body?.data?.blobUri) {
+        if (!fileHandler) throw new Error('File publication handler is not configured');
+        await fileHandler(body);
+        await receiver.completeMessage(message);
+        return;
+      }
+      if (!handler) throw new Error('Expected a FilePublished message on the milestones subscription');
+      const request = normalizeCancellationRequest(body);
 
       if (!request.poRefs.length && !request.asnRefs.length) {
         console.warn('[Service Bus] Message contained no PO or ASN refs — completing without processing.');
@@ -91,33 +101,51 @@ function start(handler) {
       }
     }
   };
+}
+
+function start(handler, fileHandler, settings = cfg.serviceBus) {
+  const { connectionString, queueName, topicName, subscriptionName } = settings;
+
+  if (!connectionString || connectionString.startsWith('Endpoint=sb://your-namespace')) {
+    console.warn('[Service Bus] Connection string not configured; listener disabled.');
+    return;
+  }
+  if (subscriptionName && !topicName) {
+    throw new Error('Service Bus topic name is required with a subscription name');
+  }
+
+  const sbClient = new ServiceBusClient(connectionString);
+  const isTopicSubscription = Boolean(subscriptionName);
+  const receiver = isTopicSubscription
+    ? sbClient.createReceiver(topicName, subscriptionName, {
+      receiveMode: 'peekLock', maxAutoLockRenewalDurationInMs: 20 * 60 * 1000,
+    })
+    : sbClient.createReceiver(queueName, {
+      receiveMode: 'peekLock', maxAutoLockRenewalDurationInMs: 20 * 60 * 1000,
+    });
+  listeners.push({ sbClient, receiver });
+  const messageHandler = createMessageHandler(receiver, handler, fileHandler);
 
   const errorHandler = async (err) => {
     console.error('[Service Bus] Receiver error:', err.message || err);
   };
 
   receiver.subscribe({ processMessage: messageHandler, processError: errorHandler }, {
-    maxConcurrentCalls:     1,     // process one PO cancel event at a time
+    maxConcurrentCalls:     1,     // process one event at a time
     autoCompleteMessages:   false, // we complete/abandon manually
   });
 
-  isRunning = true;
   console.log(isTopicSubscription
     ? `[Service Bus] Listening on topic "${topicName}" subscription "${subscriptionName}"…`
     : `[Service Bus] Listening on queue "${queueName}"…`);
 }
 
 async function stop() {
-  if (receiver) {
+  for (const { receiver, sbClient } of listeners.splice(0)) {
     await receiver.close().catch(() => {});
-    receiver = null;
-  }
-  if (sbClient) {
     await sbClient.close().catch(() => {});
-    sbClient = null;
   }
-  isRunning = false;
   console.log('[Service Bus] Listener stopped.');
 }
 
-module.exports = { normalizeCancellationRequest, start, stop, isRunning: () => isRunning };
+module.exports = { normalizeCancellationRequest, createMessageHandler, start, stop, isRunning: () => listeners.length > 0 };

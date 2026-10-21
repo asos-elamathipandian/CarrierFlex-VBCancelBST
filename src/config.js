@@ -26,6 +26,20 @@ module.exports = {
     maxMessages:      parseInt(optional('SERVICEBUS_MAX_MESSAGES', '10'), 10),
   },
 
+  milestones: {
+    serviceBus: {
+      connectionString: optional('MILESTONES_SERVICEBUS_CONNECTION_STRING', optional('SERVICEBUS_CONNECTION_STRING')),
+      topicName: optional('MILESTONES_SERVICEBUS_TOPIC_NAME'),
+      subscriptionName: optional('MILESTONES_SERVICEBUS_SUBSCRIPTION_NAME'),
+    },
+    allowedHosts: optional('MILESTONES_ALLOWED_BLOB_HOSTS', 'aspdsctinthubarchive.blob.core.windows.net')
+      .split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
+    allowedContainers: optional('MILESTONES_ALLOWED_BLOB_CONTAINERS', 'cfs')
+      .split(',').map(value => value.trim()).filter(Boolean),
+    downloadTimeoutMs: parseInt(optional('MILESTONES_DOWNLOAD_TIMEOUT_MS', '60000'), 10),
+    maxDownloadBytes: parseInt(optional('MILESTONES_MAX_DOWNLOAD_BYTES', '52428800'), 10),
+  },
+
   databricks: {
     host:     optional('DATABRICKS_HOST'),
     httpPath: optional('DATABRICKS_HTTP_PATH'),
@@ -72,6 +86,7 @@ module.exports = {
   },
 
   sftpCarrier: {
+    enabled:            optional('CARRIER_SFTP_ENABLED', 'true') === 'true',
     host:               optional('CARRIER_SFTP_HOST'),
     port:               parseInt(optional('CARRIER_SFTP_PORT', '22'), 10),
     username:           optional('CARRIER_SFTP_USERNAME'),
