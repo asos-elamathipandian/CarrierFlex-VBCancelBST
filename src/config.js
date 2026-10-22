@@ -27,6 +27,7 @@ module.exports = {
   },
 
   milestones: {
+    enabled: optional('MILESTONES_SERVICEBUS_ENABLED', 'false') === 'true',
     serviceBus: {
       connectionString: optional('MILESTONES_SERVICEBUS_CONNECTION_STRING', optional('SERVICEBUS_CONNECTION_STRING')),
       topicName: optional('MILESTONES_SERVICEBUS_TOPIC_NAME'),
@@ -83,19 +84,6 @@ module.exports = {
     passphrase:         optional('PROD_SFTP_PASSPHRASE'),
     vbkreqRemoteDir:    optional('PROD_SFTP_VBKREQ_REMOTE_DIR', '/inbound/vbkreq/'),
     bstRemoteDir:       optional('PROD_SFTP_BST_REMOTE_DIR',    '/inbound/bst/'),
-  },
-
-  sftpCarrier: {
-    enabled:            optional('CARRIER_SFTP_ENABLED', 'true') === 'true',
-    host:               optional('CARRIER_SFTP_HOST'),
-    port:               parseInt(optional('CARRIER_SFTP_PORT', '22'), 10),
-    username:           optional('CARRIER_SFTP_USERNAME'),
-    password:           optional('CARRIER_SFTP_PASSWORD'),
-    privateKeyPath:     optional('CARRIER_SFTP_PRIVATE_KEY_PATH'),
-    privateKeyContent:  optional('CARRIER_SFTP_PRIVATE_KEY_CONTENT'),
-    passphrase:         optional('CARRIER_SFTP_PASSPHRASE'),
-    remoteDir:          optional('CARRIER_SFTP_REMOTE_DIR', '/outbound/bst/'),
-    pollMinutes:        parseInt(optional('CARRIER_SFTP_POLL_MINUTES', '15'), 10),
   },
 
   carrier:   optional('CARRIER_CODE', 'DT'),

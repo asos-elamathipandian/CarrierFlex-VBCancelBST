@@ -3,7 +3,7 @@
 /**
  * csv-parser.js
  *
- * Parses CSV or Excel files downloaded from the carrier SFTP.
+ * Parses CSV or Excel files supplied to the BST pipeline.
  * Extracts rows into a normalised structure for the BST pipeline.
  *
  * Expected columns (case-insensitive, flexible naming):
@@ -149,7 +149,7 @@ async function parseExcel(filePath) {
 }
 
 /**
- * Parse a carrier SFTP file (CSV or Excel) into normalised BST input rows.
+ * Parse a CSV or Excel file into normalised BST input rows.
  * Returns [{ asn, carrier, handoverLocation }]
  */
 async function parseFile(filePath) {

@@ -3,8 +3,7 @@
 /**
  * run-bst-once.js
  *
- * Triggers the BST pipeline from a local CSV/Excel file instead of the
- * carrier SFTP.  Useful during dev/test before the carrier SFTP is available.
+ * Triggers the BST pipeline from a local CSV/Excel file for manual testing.
  *
  * File is resolved from (in priority order):
  *   1. Command-line arg:   node src/run-bst-once.js input/bst-input.csv

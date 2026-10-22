@@ -4,12 +4,12 @@
 
 This is a manual/integration test specification, not an automated test suite. All cases start as **Not run**. Successful connectivity is a prerequisite, not evidence that these tests passed.
 
-Cover the full chain: producer -> Service Bus subscription -> application -> enrichment and business rules -> XML -> E2open SFTP -> downstream acceptance -> logs/dashboard. Retain the carrier SFTP input tests while that BST route is supported.
+Cover the full chain: producer -> Service Bus subscription -> application -> enrichment and business rules -> XML -> E2open SFTP -> downstream acceptance -> logs/dashboard. BST CSV input is published through the milestones Service Bus subscription; carrier SFTP is not an input route.
 
 Current implementation boundaries:
 
 - Cancellation receives Service Bus events through `src/service-bus-listener.js` and calls `src/vb-cancel-pipeline.js`.
-- BST currently polls carrier SFTP CSV/Excel files through `src/bst-pipeline.js`. A BST Service Bus listener and message contract are not implemented. Cases marked **BST topic gate** cannot run until they exist.
+- BST `FilePublished` events are received from the configured Service Bus subscription and download the CSV from the event's blob URI before calling `src/bst-pipeline.js`.
 - Cancellation ASN references take precedence over PO references; the supplied PO is not currently used to constrain an ASN lookup.
 - Cancellation resolves the VB reference from outbound 856 blobs. Another ASN sharing that reference in the same date folder causes a skip, even if both ASNs are in the cancellation request.
 - Logs record submission, not downstream E2open acceptance. Acceptance checks require partner acknowledgments or an agreed downstream observation.
@@ -78,7 +78,7 @@ For each case below:
 
 1. Prepare its fixture and record active/DLQ counts, log baseline, and existing local/remote filenames.
 2. Assign a unique test run ID and MessageId; record body and properties, publication time, and fixture manifest. For duplicate tests reuse the specified ID deliberately.
-3. Perform the stated action. Publish cancellation to its topic and BST only to the approved BST topic after its gate is met; otherwise place the BST file on test carrier SFTP.
+3. Perform the stated action. Publish cancellation to its topic and `FilePublished` BST events to the approved milestones topic/subscription.
 4. Observe settlement, delivery count, errors, output XML, local and remote artifacts, and log/dashboard records. A disappearing message alone is not a pass.
 5. Parse generated XML with an XML parser and validate the approved XSD where available. Compare semantic fields and file counts against the manifest, not whole XML bytes containing dynamic timestamps/control numbers.
 6. Verify remote file integrity by hash where possible, or byte comparison through a test download. Confirm downstream acceptance and business state for successful E2E cases.
@@ -88,13 +88,13 @@ For each case below:
 
 | ID | Priority | Test and action | Expected result / evidence |
 | --- | --- | --- | --- |
-| CON-01 | P0 | Peek existing test messages on each subscription using the configured identity. | Correct namespace/topic/subscription; bodies visible; active counts unchanged by peeking; no pipeline output. BST topic gate applies to application consumption, not an independent connection probe. |
-| CON-02 | P0 | Publish one uniquely identified valid event to each topic and start the intended consumer only. | Event reaches the intended subscription and correct pipeline exactly once in this controlled run; unrelated messages/flows are not processed. BST topic gate. |
+| CON-01 | P0 | Peek existing test messages on the cancellation and milestones subscriptions using the configured identity. | Correct namespace/topic/subscription; bodies visible; active counts unchanged by peeking; no pipeline output. |
+| CON-02 | P0 | Publish one uniquely identified valid cancellation and one valid `FilePublished` event to their respective subscriptions. | Each event reaches the intended pipeline; cancellation generates VBKREQ and file publication downloads the CSV for BST processing; unrelated flows are not processed. |
 | CON-03 | P1 | Test valid credentials with no Listen permission, then expired/revoked credentials. | Explicit actionable authorization error; no read or output; alert visible; secrets absent from logs. Restore credentials and verify recovery. |
 | CON-04 | P1 | Configure an incorrect topic/subscription and test session-enabled versus approved non-session setup. | Startup/receiver failure surfaced; no false ready/healthy signal; unsupported sessions clearly rejected or blocked by deployment validation. |
 | CON-05 | P0 | Publish matching and nonmatching application properties against subscription filters. | Only matching events arrive; producer/filter agreement is proven with counts. Capture ignored events in a separate test observer if authorized. |
 | CON-06 | P1 | Publish object and JSON-string cancellation bodies; repeat with malformed JSON, empty/null fields, null array elements, unsupported types, and oversized payloads. | Valid forms normalize; invalid values are not transformed into usable references such as "null"; invalid events follow agreed rejection/DLQ policy with no output. Broker size rejections are distinguished from application validation. |
-| CON-07 | P0 | Publish valid and invalid BST JSON plus each permitted encoding and contract version. | Supported versions map to canonical BST fields; unsupported versions are rejected without output; cancellation consumer never handles BST data. **BST topic gate** and approved schema required. |
+| CON-07 | P0 | Publish valid and invalid `FilePublished` JSON events, including malformed fields and disallowed blob locations. | Valid events download and process the CSV through BST; invalid events are abandoned for retry without processing; cancellation requests are not sent through the BST pipeline. |
 
 ## Booking Cancellation Functional Cases
 
@@ -175,7 +175,7 @@ The durations and multipliers below are proposed test workloads, not verified ca
 
 | ID | Priority | Workload / execution | Acceptance and measurements |
 | --- | --- | --- | --- |
-| PERF-01 | P0 | Baseline: at least 100 valid events per flow after warm-up with real test dependencies. | Measure p50/p95/p99 enqueue-to-start, enrichment, generation, upload and acceptance; establish no-loss baseline and file/event counts. BST topic gate for topic latency. |
+| PERF-01 | P0 | Baseline: at least 100 valid events per flow after warm-up with real test dependencies. | Measure p50/p95/p99 enqueue-to-start, enrichment, generation, upload and acceptance; establish no-loss baseline and file/event counts for cancellation and milestones subscriptions. |
 | PERF-02 | P0 | Steady load: both flows concurrently at forecast R_cancel/R_bst for 60 minutes. | Meets agreed latency/throughput/resource budgets; backlog stable rather than continually growing; no lost/corrupt output or unintended duplicate effect. |
 | PERF-03 | P1 | Burst: 5x forecast input rate for 5 minutes, then normal rate. | Backlog drains within agreed recovery budget; latency degradation measured; no dependency exhaustion/data loss; capture active/DLQ counts. |
 | PERF-04 | P0 | Maximum approved ASNs/event and SKUs/ASN; large BST batches/files with realistic distributions. | Exact output cardinality; lock budget adequate; no overwrite; memory and payload limits respected; normal small events not starved beyond agreed budget. |
